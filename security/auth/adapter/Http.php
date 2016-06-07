@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -13,26 +13,26 @@ use lithium\core\Libraries;
 /**
  * The `Http` adapter provides basic and digest authentication based on the HTTP protocol.
  * By default, the adapter uses Http Digest based authentication.
- * {{{
+ * ```
  * Auth::config(array('name' => array('adapter' => 'Http', 'users' => array('gwoo' => 'li3'))))
- * }}}
+ * ```
  *
  * To use Basic authentication, set the `method` to basic.
- * {{{
+ * ```
  * Auth::config(array('name' => array(
  *     'adapter' => 'Http', 'users' => array('gwoo' => 'li3'),
  *     'method' => 'basic'
  * )))
- * }}}
+ * ```
  *
  * When running PHP as a CGI/FCGI PHP doesn't automatically parse the authorization
  * header into `PHP_AUTH_*` headers. Lithium will work arround this issue by looking for
  * a `HTTP_AUTHORIZATION` header instead. When using PHP as a CGI/FCGI in combination
  * with Apache you must additionally add the following rewrite rule to your configuration
  * in order to make the header available so Lithium can pick it up:
- * {{{
+ * ```
  * RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
- * }}}
+ * ```
  *
  * @link http://tools.ietf.org/html/rfc2068#section-14.8
  * @see lithium\action\Request
@@ -50,12 +50,13 @@ class Http extends \lithium\core\Object {
 	);
 
 	/**
-	 * Setup default configuration options.
+	 * Constructor.
 	 *
 	 * @param array $config
-	 *        - `method`: default: `digest` options: `basic|digest`
-	 *        - `realm`: default: `Protected by Lithium`
-	 *        - `users`: the users to permit. key => value pair of username => password
+	 *        - `'method'`: default: `digest` options: `basic|digest`
+	 *        - `'realm'`: default: `Protected by Lithium`
+	 *        - `'users'`: the users to permit. key => value pair of username => password
+	 * @return void
 	 */
 	public function __construct(array $config = array()) {
 		$realm = basename(Libraries::get(true, 'path'));
@@ -106,8 +107,8 @@ class Http extends \lithium\core\Object {
 	/**
 	 * Handler for HTTP Basic Authentication
 	 *
-	 * @param string $request a `\lithium\action\Request` object
-	 * @return void
+	 * @param \lithium\action\Request $request
+	 * @return void|array
 	 */
 	protected function _basic($request) {
 		$users = $this->_config['users'];
@@ -129,8 +130,8 @@ class Http extends \lithium\core\Object {
 	/**
 	 * Handler for HTTP Digest Authentication
 	 *
-	 * @param string $request a `\lithium\action\Request` object
-	 * @return void
+	 * @param \lithium\action\Request $request
+	 * @return boolean|array
 	 */
 	protected function _digest($request) {
 		$username = $password = null;

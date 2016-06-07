@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2012, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -49,12 +49,14 @@ class Inspector {
 	);
 
 	/**
-	 * Will determine if a method can be called.
+	 * Determines if a given method can be called on an object/class.
 	 *
-	 * @param  string|object $class      Class to inspect.
-	 * @param  string        $method     Method name.
-	 * @param  bool          $internal   Interal call or not.
-	 * @return bool True if the method can be called or false otherwise.
+	 * @param string|object $object Class or instance to inspect.
+	 * @param string $method Name of the method.
+	 * @param boolean $internal Should be `true` if you want to check from inside the
+	 *                class/object. When `false` will also check for public visibility,
+	 *                defaults to `false`.
+	 * @return boolean Returns `true` if the method can be called, `false` otherwise.
 	 */
 	public static function isCallable($object, $method, $internal = false) {
 		$methodExists = method_exists($object, $method);
@@ -126,6 +128,7 @@ class Inspector {
 			$result['modifiers'] = static::_modifiers($inspector);
 		} elseif ($type === 'class') {
 			$inspector = new ReflectionClass($identifier);
+			$classInspector = null;
 		} else {
 			return null;
 		}
@@ -148,12 +151,11 @@ class Inspector {
 
 				if ($setAccess) {
 					$inspector->setAccessible(false);
-					$setAccess = false;
 				}
 			}
 		}
 
-		if ($type === 'property' && !$classInspector->isAbstract()) {
+		if ($type === 'property' && $classInspector && !$classInspector->isAbstract()) {
 			$inspector->setAccessible(true);
 
 			try {
@@ -416,7 +418,7 @@ class Inspector {
 	 *          to `true`.
 	 * @return array An array of the name of the parent classes of the passed `$class` parameter,
 	 *         or `false` on error.
-	 * @link http://php.net/manual/en/function.class-parents.php PHP Manual: `class_parents()`.
+	 * @link http://php.net/function.class-parents.php PHP Manual: `class_parents()`.
 	 */
 	public static function parents($class, array $options = array()) {
 		$defaults = array('autoLoad' => false);

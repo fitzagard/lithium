@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -448,9 +448,9 @@ class DocumentTest extends \lithium\test\Unit {
 	public function testInvalidCall() {
 		$doc = new Document();
 
-		$this->expectException("No model bound to call `medicin`.");
-		$result = $doc->medicin();
-		$this->assertNull($result);
+		$this->assertException("No model bound to call `medicin`.", function() use ($doc) {
+			$doc->medicin();
+		});
 	}
 
 	public function testCall() {
@@ -509,12 +509,21 @@ class DocumentTest extends \lithium\test\Unit {
 	public function testIsset() {
 		$doc = new Document(array('data' => array(
 			'title' => 'Post',
-			'content' => 'Lorem Ipsum'
+			'content' => 'Lorem Ipsum',
+			'extra' => array(
+				'foo' => 'bar'
+			)
 		)));
 
 		$this->assertTrue(isset($doc->title));
 		$this->assertTrue(isset($doc->content));
 		$this->assertFalse(isset($doc->body));
+
+		$key = 'extra.foo';
+		$this->assertTrue(isset($doc->{$key}));
+
+		$key = 'extra.baz';
+		$this->assertFalse(isset($doc->{$key}));
 	}
 
 	public function testData() {

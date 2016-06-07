@@ -2,21 +2,25 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
 namespace lithium\data;
-
-use Closure;
 
 /**
  * The `Collection` class extends the generic `lithium\util\Collection` class to provide
  * context-specific features for working with sets of data persisted by a backend data store. This
  * is a general abstraction that operates on arbitrary sets of data from either relational or
  * non-relational data stores.
+ *
+ * Instances of `lithium\data\Collection` or any subclass of it may be serialized. This
+ * operation however isn't lossless. The documentation of the `serialize()` method has
+ * more information on the limitations.
+ *
+ * @see lithium\data\Collection::serialize()
  */
-abstract class Collection extends \lithium\util\Collection {
+abstract class Collection extends \lithium\util\Collection implements \Serializable {
 
 	/**
 	 * A reference to this object's parent `Document` object.
@@ -55,7 +59,7 @@ abstract class Collection extends \lithium\util\Collection {
 	 * A pointer or resource that is used to load entities from the backend data source that
 	 * originated this collection.
 	 *
-	 * @var resource
+	 * @var resource|object
 	 */
 	protected $_result = null;
 
@@ -78,9 +82,9 @@ abstract class Collection extends \lithium\util\Collection {
 	protected $_stats = array();
 
 	/**
-	 * Setted to `true` when the collection has begun iterating.
+	 * Set to `true` when the collection has begun iterating.
 	 *
-	 * @var integer
+	 * @var boolean
 	 */
 	protected $_started = false;
 
@@ -121,9 +125,14 @@ abstract class Collection extends \lithium\util\Collection {
 	);
 
 	/**
-	 * Class constructor.
+	 * Constructor.
 	 *
-	 * @param array $config
+	 * @see lithium\data\Collection::$_data
+	 * @see lithium\data\Collection::$_model
+	 * @param array $config Available configuration options are:
+	 *        - `'data'` _array_
+	 *        - `'model'` _string|null_
+	 * @return void
 	 */
 	public function __construct(array $config = array()) {
 		$defaults = array('data' => array(), 'model' => null);
@@ -197,14 +206,17 @@ abstract class Collection extends \lithium\util\Collection {
 	}
 
 	/**
-	 * Allows several properties to be assigned at once.
+	 * Allows several items to be assigned at once.
 	 *
 	 * For example:
-	 * {{{
-	 * $collection->set(array('title' => 'Lorem Ipsum', 'value' => 42));
-	 * }}}
+	 * ```
+	 * $collection->set(array(
+	 *	42 => array('title' => 'Lorem Ipsum'),
+	 *	43 => array('title' => 'Dolor Amet')
+	 * ));
+	 * ```
 	 *
-	 * @param $values An associative array of fields and values to assign to the `Collection`.
+	 * @param arary $values An associative array of fields and values to assign to the `Collection`.
 	 * @return void
 	 */
 	public function set($values) {
@@ -274,7 +286,7 @@ abstract class Collection extends \lithium\util\Collection {
 	public function rewind() {
 		$this->_started = true;
 		reset($this->_data);
-		$this->_valid = !empty($this->_data) || !is_null($this->_populate());
+		$this->_valid = !empty($this->_data) || $this->_populate() !== null;
 		return current($this->_data);
 	}
 
@@ -308,7 +320,7 @@ abstract class Collection extends \lithium\util\Collection {
 	/**
 	 * Returns the currently pointed to record in the set.
 	 *
-	 * @return object `Record`
+	 * @return object|boolean An instance of `Record` or `false` if there is no current valid one.
 	 */
 	public function current() {
 		if (!$this->_started) {
@@ -333,9 +345,10 @@ abstract class Collection extends \lithium\util\Collection {
 			$this->rewind();
 		}
 		next($this->_data);
-		$this->_valid = !(key($this->_data) === null);
+		$this->_valid = key($this->_data) !== null;
+
 		if (!$this->_valid) {
-			$this->_valid = !is_null($this->_populate());
+			$this->_valid = $this->_populate() !== null;
 		}
 		return current($this->_data);
 	}
@@ -387,7 +400,7 @@ abstract class Collection extends \lithium\util\Collection {
 	 * `Collection`.
 	 *
 	 * @param array $filter An array of key/value pairs used to filter `Collection` items.
-	 * @return Closure Returns a closure that wraps the array and attempts to match each value
+	 * @return \Closure Returns a closure that wraps the array and attempts to match each value
 	 *         against `Collection` item properties.
 	 */
 	protected function _filterFromArray(array $filter) {
@@ -463,7 +476,7 @@ abstract class Collection extends \lithium\util\Collection {
 		if (!$this->closed()) {
 			while ($this->next()) {}
 		}
-		return parent::reduce($filter);
+		return parent::reduce($filter, $initial);
 	}
 
 	/**
@@ -472,11 +485,11 @@ abstract class Collection extends \lithium\util\Collection {
 	 *
 	 * Overriden to load any data that has not yet been loaded.
 	 *
-	 * @param mixed $field The field to sort the data on, can also be a callback
+	 * @see lithium\util\Collection::sort()
+	 * @param string|callable $field The field to sort the data on, can also be a callback
 	 *        to a custom sort function.
-	 * @param array $options The available options are:
-	 *        - No options yet implemented
-	 * @return $this, useful for chaining this with other methods.
+	 * @param array $options Reserved for future use.
+	 * @return lithium\data\Collection Returns itself.
 	 */
 	public function sort($field = 'id', array $options = array()) {
 		$this->offsetGet(null);
@@ -486,17 +499,16 @@ abstract class Collection extends \lithium\util\Collection {
 				if (is_array($a)) {
 					$a = (object) $a;
 				}
-
 				if (is_array($b)) {
 					$b = (object) $b;
 				}
-
 				return strcmp($a->$field, $b->$field);
 			};
 		} elseif (is_callable($field)) {
 			$sorter = $field;
+		} else {
+			return $this;
 		}
-
 		return parent::sort($sorter, $options);
 	}
 
@@ -516,14 +528,16 @@ abstract class Collection extends \lithium\util\Collection {
 	 * array conversion, but other formats may be registered.
 	 *
 	 * Once the appropriate handlers are registered, a `Collection` instance can be converted into
-	 * any handler-supported format, i.e.: {{{
+	 * any handler-supported format, i.e.:
+	 * ```
 	 * $collection->to('json'); // returns a JSON string
 	 * $collection->to('xml'); // returns an XML string
-	 * }}}
+	 * ```
 	 *
 	 *  _Please note that Lithium does not ship with a default XML handler, but one can be
 	 * configured easily._
 	 *
+	 * @see lithium\util\Collection::toArray()
 	 * @see lithium\util\Collection::formats()
 	 * @see lithium\util\Collection::$_formats
 	 * @param string $format By default the only supported value is `'array'`. However, additional
@@ -533,6 +547,10 @@ abstract class Collection extends \lithium\util\Collection {
 	 *          collection should be exported. Defaults to `false`, which uses the standard iterator
 	 *          interfaces. This is useful for exporting record sets, where records are lazy-loaded,
 	 *          and the collection must be iterated in order to fetch all objects.
+	 *        - `'indexed'` _boolean|null_: Allows to control how converted data is keyed. When set
+	 *          to `true` will force indexed conversion of the collection (the default) even if the
+	 *          collection has a parent. When `false` will convert without indexing. Provide `null`
+	 *          as a value to this option to only index when the collection has no parent.
 	 * @return mixed The object converted to the value specified in `$format`; usually an array or
 	 *         string.
 	 */
@@ -600,10 +618,57 @@ abstract class Collection extends \lithium\util\Collection {
 	}
 
 	/**
-	 * Ensures that the data set's connection is closed when the object is destroyed.
+	 * Destructor. Ensures that the data set's connection is closed when the object is destroyed.
+	 *
+	 * @return void
 	 */
 	public function __destruct() {
 		$this->close();
+	}
+
+	/**
+	 * Prepares, enables and executes serialization of the object.
+	 *
+	 * Note: because of the limitations outlined below custom
+	 * handlers are ignored with serialized objects.
+	 *
+	 * Pulls all results to entirely populate `_data` and closes the object
+	 * freeing the associated result resource. This allows for skipping
+	 * the `_result` property which may hold unserializable `PDOStatement`s.
+	 *
+	 * Properties that hold anonymous functions are also skipped. Some of these
+	 * can almost be reconstructed (`_handlers`) others cannot (`_methodFilters`).
+	 *
+	 * @return string Serialized properties of the object.
+	 */
+	public function serialize() {
+		$this->offsetGet(null);
+		static::__destruct();
+
+		$vars = get_object_vars($this);
+		unset($vars['_result']);
+		unset($vars['_handlers']);
+		unset($vars['_methodFilters']);
+
+		return serialize($vars);
+	}
+
+	/**
+	 * Prepares, enables and executes unserialization of the object.
+	 *
+	 * Restores state of the object including pulled results. Tries
+	 * to restore `_handlers` by calling into `_init()`.
+	 *
+	 * @param string $data Serialized properties of the object.
+	 * @return void
+	 */
+	public function unserialize($data) {
+		$vars = unserialize($data);
+		parent::_init();
+
+		foreach ($vars as $key => $value) {
+			$this->{$key} = $value;
+		}
 	}
 
 	/**

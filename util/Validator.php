@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2012, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -10,7 +10,6 @@ namespace lithium\util;
 
 use lithium\util\Set;
 use InvalidArgumentException;
-use Closure;
 
 /**
  * The `Validator` class provides static access to commonly used data validation logic. These common
@@ -21,20 +20,20 @@ use Closure;
  * parameter to the `rule()` method or accessed directly via the `is[RuleName]()` method name
  * convention:
  *
- * {{{
+ * ```
  * use lithium\util\Validator;
  *
  * // The following are equivalent:
  * Validator::rule('email', 'foo@example.com');  // true
  * Validator::isEmail('foo-at-example.com');     // false
- * }}}
+ * ```
  *
  * Data can also be validated against multiple rules, each having their own associated error
  * message. The rule structure is array-based and hierarchical based on rule names and
  * messages. Responses match the keys present in the `$data` parameter of `check()` up with an array
  * of rules which they violate.
  *
- * {{{ embed:lithium\tests\cases\util\ValidatorTest::testCheckMultipleHasFirstError(1-15) }}}
+ * ``` embed:lithium\tests\cases\util\ValidatorTest::testCheckMultipleHasFirstError(1-15) ```
  *
  * See the `check()` method for more information an multi-value datasets. Custom validation rules
  * can also be added to `Validator` at runtime. These can either take the form of regular expression
@@ -116,7 +115,7 @@ use Closure;
  * - `url`: Checks that a value is a valid URL according to
  *   [RFC 2395](http://www.faqs.org/rfcs/rfc2396.html). Uses PHP's filter API, and accepts any
  *   options accepted for
- *   [the validation URL filter](http://www.php.net/manual/en/filter.filters.validate.php).
+ *   [the validation URL filter](http://php.net/filter.filters.validate.php).
  *
  * - `luhn`: Checks that a value is a valid credit card number according to the
  *   [Luhn algorithm](http://en.wikipedia.org/wiki/Luhn_algorithm). (See also: the `creditCard`
@@ -136,7 +135,7 @@ use Closure;
  * UTF-8 encoded input in mind. A default PHP binary and an enabled Lithium
  * g11n bootstrap will make these rules work correctly in any case. Should you
  * ever experience odd behavior following paragraph with implementation
- * details might help you to track to the cause.
+ * details might help you to track down the cause.
  *
  * The rules `alphaNumeric` and `money` rely on additional functionality of
  * PCRE to validate UTF-8 encoded strings. As no PCRE feature detection is
@@ -306,11 +305,11 @@ class Validator extends \lithium\core\StaticObject {
 					return false;
 				}
 				switch (true) {
-					case (!is_null($options['upper']) && !is_null($options['lower'])):
+					case ($options['upper'] !== null && $options['lower'] !== null):
 						return ($value >= $options['lower'] && $value <= $options['upper']);
-					case (!is_null($options['upper'])):
+					case ($options['upper'] !== null):
 						return ($value <= $options['upper']);
-					case (!is_null($options['lower'])):
+					case ($options['lower'] !== null):
 						return ($value >= $options['lower']);
 				}
 				return is_finite($value);
@@ -387,11 +386,13 @@ class Validator extends \lithium\core\StaticObject {
 	}
 
 	/**
-	 * Custom check to determine if our given magic methods can be responded to.
+	 * Determines if a given method can be called.
 	 *
-	 * @param  string  $method     Method name.
-	 * @param  bool    $internal   Interal call or not.
-	 * @return bool
+	 * @param string $method Name of the method.
+	 * @param boolean $internal Provide `true` to perform check from inside the
+	 *                class/object. When `false` checks also for public visibility;
+	 *                defaults to `false`.
+	 * @return boolean Returns `true` if the method can be called, `false` otherwise.
 	 */
 	public static function respondsTo($method, $internal = false) {
 		$rule = preg_replace("/^is([A-Z][A-Za-z0-9]+)$/", '$1', $method);
@@ -482,6 +483,9 @@ class Validator extends \lithium\core\StaticObject {
 				$options['field'] = $field;
 
 				foreach ($rules as $key => $rule) {
+					if (array_key_exists('required', $rule) && $rule['required'] === null) {
+						unset($rule['required']);
+					}
 					$rule += $options + compact('values');
 					list($name) = $rule;
 
@@ -519,24 +523,24 @@ class Validator extends \lithium\core\StaticObject {
 	 * validation rules created are automatically callable as validation methods.
 	 *
 	 * For example:
-	 * {{{
+	 * ```
 	 * Validator::add('zeroToNine', '/^[0-9]$/');
 	 * $isValid = Validator::isZeroToNine("5"); // true
 	 * $isValid = Validator::isZeroToNine("20"); // false
-	 * }}}
+	 * ```
 	 *
 	 * Alternatively, the first parameter may be an array of rules expressed as key/value pairs,
 	 * as in the following:
-	 * {{{
+	 * ```
 	 * Validator::add(array(
 	 * 	'zeroToNine' => '/^[0-9]$/',
 	 * 	'tenToNineteen' => '/^1[0-9]$/',
 	 * ));
-	 * }}}
+	 * ```
 	 *
 	 * In addition to regular expressions, validation rules can also be defined as full anonymous
 	 * functions:
-	 * {{{
+	 * ```
 	 * use app\models\Account;
 	 *
 	 * Validator::add('accountActive', function($value) {
@@ -546,13 +550,13 @@ class Validator extends \lithium\core\StaticObject {
 	 *
 	 * $testAccount = Account::create(array('is_active' => false));
 	 * Validator::isAccountActive($testAccount); // returns false
-	 * }}}
+	 * ```
 	 *
 	 * These functions can take up to 3 parameters:
 	 * 	- `$value` _mixed_: This is the actual value to be validated (as in the above example).
 	 * 	- `$format` _string_: Often, validation rules come in multiple "formats", for example:
 	 * 	  postal codes, which vary by country or region. Defining multiple formats allows you to
-	 * 	  retian flexibility in how you validate data. In cases where a user's country of origin
+	 * 	  retain flexibility in how you validate data. In cases where a user's country of origin
 	 * 	  is known, the appropriate validation rule may be selected. In cases where it is not
 	 * 	  known, the value of `$format` may be `'any'`, which should pass if any format matches.
 	 * 	  In cases where validation rule formats are not mutually exclusive, the value may be
@@ -636,7 +640,7 @@ class Validator extends \lithium\core\StaticObject {
 	 * and an array specifying which formats within the rule to use.
 	 *
 	 * @param array $rules All available rules.
-	 * @return Closure Function returning boolean `true` if validation succeeded, `false` otherwise.
+	 * @return \Closure Function returning boolean `true` if validation succeeded, `false` otherwise.
 	 */
 	protected static function _checkFormats($rules) {
 		return function($self, $params, $chain) use ($rules) {
@@ -658,14 +662,11 @@ class Validator extends \lithium\core\StaticObject {
 				$regexPassed = (is_string($check) && preg_match($check, $value));
 				$closurePassed = (is_object($check) && $check($value, $format, $options));
 
-				if (!$options['all'] && ($regexPassed || $closurePassed)) {
+				if ($regexPassed || $closurePassed) {
 					return true;
 				}
-				if ($options['all'] && (!$regexPassed && !$closurePassed)) {
-					return false;
-				}
 			}
-			return $options['all'];
+			return false;
 		};
 	}
 }

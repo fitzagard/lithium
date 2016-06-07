@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2012, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -85,18 +85,18 @@ class Request extends \lithium\net\http\Request {
 	protected $_env = array();
 
 	/**
-	 * If POST / PUT data is coming from an input stream (rather than `$_POST`), this specified
-	 * where to read it from.
+	 * If POST, PUT or PATCH data is coming from an input stream (rather than `$_POST`),
+	 * this specified where to read it from.
 	 *
-	 * @var stream
+	 * @see lithium\action\Request::_init()
+	 * @var resource
 	 */
 	protected $_stream = null;
 
 	/**
 	 * Options used to detect features of the request, using `is()`. For example:
 	 *
-	 * {{{ embed:lithium\tests\cases\action\RequestTest::testRequestTypeIsMobile(4-4) }}}
-	 *
+	 * ``` embed:lithium\tests\cases\action\RequestTest::testRequestTypeIsMobile(4-4) ```
 	 *
 	 * Custom detectors can be added using `detect()`.
 	 *
@@ -111,6 +111,7 @@ class Request extends \lithium\net\http\Request {
 		'ssl'     => 'HTTPS',
 		'get'     => array('REQUEST_METHOD', 'GET'),
 		'post'    => array('REQUEST_METHOD', 'POST'),
+		'patch'   => array('REQUEST_METHOD', 'PATCH'),
 		'put'     => array('REQUEST_METHOD', 'PUT'),
 		'delete'  => array('REQUEST_METHOD', 'DELETE'),
 		'head'    => array('REQUEST_METHOD', 'HEAD'),
@@ -132,7 +133,7 @@ class Request extends \lithium\net\http\Request {
 	 *
 	 * @var array
 	 */
-	protected $_acceptContent = array();
+	protected $_accept = array();
 
 	/**
 	 * Holds the value of the current locale, set through the `locale()` method.
@@ -142,42 +143,42 @@ class Request extends \lithium\net\http\Request {
 	protected $_locale = null;
 
 	/**
-	 * Adds config values to the public properties when a new object is created, pulling
-	 * request data from superglobals if `globals` is set to `true`.
+	 * Constructor. Adds config values to the public properties when a new object is created,
+	 * pulling request data from superglobals if `globals` is set to `true`.
 	 *
-	 * @param array $config Configuration options : default values are:
-	 *        - `'base'` _string_: null
-	 *        - `'url'` _string_: null
-	 *        - `'protocol'` _string_: null
-	 *        - `'version'` _string_: '1.1'
-	 *        - `'method'` _string_: 'GET'
-	 *        - `'scheme'` _string_: 'http'
-	 *        - `'host'` _string_: 'localhost'
-	 *        - `'port'` _integer_: null
-	 *        - `'username'` _string_: null
-	 *        - `'password'` _string_: null
-	 *        - `'path'` _string_: null
-	 *        - `'query'` _array_: array()
-	 *        - `'headers'` _array_: array()
-	 *        - `'type'` _string_: null
-	 *        - `'auth'` _mixed_: null
-	 *        - `'body'` _mixed_: null
-	 *        - `'data'` _array_: array()
-	 *        - `'env'` _array_: array()
-	 *        - `'globals'` _boolean_: true
+	 * Normalizes casing of request headers.
+	 *
+	 * @see lithium\net\http\Request::__construct()
+	 * @see lithium\net\http\Message::__construct()
+	 * @see lithium\net\Message::__construct()
+	 * @param array $config The available configuration options are the following. Further
+	 *        options are inherited from the parent classes.
+	 *        - `'base'` _string_: Defaults to `null`.
+	 *        - `'url'` _string_: Defaults to `null`.
+	 *        - `'data'` _array_: Additional data to use when initializing
+	 *          the request. Defaults to `array()`.
+	 *        - `'stream'` _resource_: Stream to read from in order to get the message
+	 *          body when method is POST, PUT or PATCH and data is empty. When not provided
+	 *          `php://input` will be used for reading.
+	 *        - `'env'` _array_: Defaults to `array()`.
+	 *        - `'globals'` _boolean_: Use global variables for populating
+	 *          the request's environment and data; defaults to `true`.
+	 * @return void
 	 */
 	public function __construct(array $config = array()) {
 		$defaults = array(
 			'base' => null,
 			'url' => null,
 			'env' => array(),
-			'query' => array(),
 			'data' => array(),
-			'globals' => true
+			'stream' => null,
+			'globals' => true,
+			'query' => array(),
+			'headers' => array()
 		);
 		$config += $defaults;
 
-		if ($config['globals'] === true) {
+		if ($config['globals']) {
 			if (isset($_SERVER)) {
 				$config['env'] += $_SERVER;
 			}
@@ -201,10 +202,9 @@ class Request extends \lithium\net\http\Request {
 		}
 		if ($config['protocol'] && strpos($config['protocol'], '/')) {
 			list($scheme, $version) = explode('/', $config['protocol']);
-			$https = ($this->env('HTTPS') ? 's' : '');
-			$scheme = strtolower($scheme) . $https;
+
 			if (!isset($config['scheme'])) {
-				$config['scheme'] = $scheme;
+				$config['scheme'] = strtolower($scheme) . ($this->env('HTTPS') ? 's' : '');
 			}
 			if (!isset($config['version'])) {
 				$config['version'] = $version;
@@ -212,28 +212,35 @@ class Request extends \lithium\net\http\Request {
 		}
 		$this->_base = $this->_base($config['base']);
 		$this->url = $this->_url($config['url']);
-		parent::__construct($config);
 
-		$this->headers('Content-Type', $this->env('CONTENT_TYPE'));
-		$this->headers('Content-Length', $this->env('CONTENT_LENGTH'));
+		$config['headers'] += array(
+			'Content-Type' => $this->env('CONTENT_TYPE'),
+			'Content-Length' => $this->env('CONTENT_LENGTH')
+		);
 
 		foreach ($this->_env as $name => $value) {
-			if (substr($name, 0, 5) == 'HTTP_') {
+			if ($name[0] === 'H' && strpos($name, 'HTTP_') === 0) {
 				$name = str_replace('_', ' ', substr($name, 5));
 				$name = str_replace(' ', '-', ucwords(strtolower($name)));
-				$this->headers($name, $value);
+				$config['headers'] += array($name => $value);
 			}
 		}
+
+		parent::__construct($config);
 	}
 
 	/**
-	 * Initialize request object
+	 * Initializes request object by setting up mobile detectors, determining method and
+	 * populating the data property either by using i.e. form data or reading from STDIN in
+	 * case binary data is streamed. Will merge any files posted in forms with parsed data.
 	 *
-	 * Defines an artificial `'PLATFORM'` environment variable as either `'IIS'`, `'CGI'` or `null`
-	 * to allow checking for the SAPI in a normalized way.
+	 * Note that only beginning with PHP 5.6 STDIN can be opened/read and closed more than once.
+	 *
+	 * @see lithium\action\Request::_parseFiles()
 	 */
 	protected function _init() {
 		parent::_init();
+
 		$mobile = array(
 			'iPhone', 'MIDP', 'AvantGo', 'BlackBerry', 'J2ME', 'Opera Mini', 'DoCoMo', 'NetFront',
 			'Nokia', 'PalmOS', 'PalmSource', 'portalmmm', 'Plucker', 'ReqwirelessWeb', 'iPod',
@@ -244,14 +251,15 @@ class Request extends \lithium\net\http\Request {
 		}
 		$this->_detectors['mobile'][1] = $mobile;
 
-		$this->data = $this->_config['data'];
+		$this->data = (array) $this->_config['data'];
+
 		if (isset($this->data['_method'])) {
 			$this->_computed['HTTP_X_HTTP_METHOD_OVERRIDE'] = strtoupper($this->data['_method']);
 			unset($this->data['_method']);
 		}
 		$type = $this->type($this->_config['type'] ?: $this->env('CONTENT_TYPE'));
-		$this->method = $method = strtoupper($this->env('REQUEST_METHOD'));
-		$hasBody = in_array($method, array('POST', 'PUT', 'PATCH'));
+		$this->method = strtoupper($this->env('REQUEST_METHOD'));
+		$hasBody = in_array($this->method, array('POST', 'PUT', 'PATCH'));
 
 		if (!$this->body && $hasBody && $type !== 'html') {
 			$this->_stream = $this->_stream ?: fopen('php://input', 'r');
@@ -262,7 +270,10 @@ class Request extends \lithium\net\http\Request {
 			$this->data = $this->body(null, array('decode' => true, 'encode' => false));
 		}
 		$this->body = $this->data;
-		$this->data = Set::merge((array) $this->data, $this->_parseFiles());
+
+		if ($this->_config['globals'] && !empty($_FILES)) {
+			$this->data = Set::merge($this->data, $this->_parseFiles($_FILES));
+		}
 	}
 
 	/**
@@ -295,6 +306,9 @@ class Request extends \lithium\net\http\Request {
 	/**
 	 * Queries PHP's environment settings, and provides an abstraction for standardizing expected
 	 * environment values across varying platforms, as well as specify custom environment flags.
+	 *
+	 * Defines an artificial `'PLATFORM'` environment variable as either `'IIS'`, `'CGI'`
+	 * or `null` to allow checking for the SAPI in a normalized way.
 	 *
 	 * @param string $key The environment variable required.
 	 * @return string The requested variables value.
@@ -428,24 +442,36 @@ class Request extends \lithium\net\http\Request {
 	/**
 	 * Returns information about the type of content that the client is requesting.
 	 *
+	 * This method may work different then you might think. This is a _convenience_ method
+	 * working exclusively with short type names it knows about. Only those types will be
+	 * matched. You can tell this method about more types via `Media::type()`.
+	 *
+	 * Note: In case negotiation fails, `'html'` is used as a fallback type.
+	 *
 	 * @see lithium\net\http\Media::negotiate()
-	 * @param $type mixed If not specified, returns the media type name that the client prefers,
-	 *        using content negotiation. If a media type name (string) is passed, returns `true` or
-	 *        `false`, indicating whether or not that type is accepted by the client at all.
-	 *        If `true`, returns the raw content types from the `Accept` header, parsed into an array
-	 *        and sorted by client preference.
-	 * @return string Returns a simple type name if the type is registered (i.e. `'json'`), or
-	 *         a fully-qualified content-type if not (i.e. `'image/jpeg'`), or a boolean or array,
-	 *         depending on the value of `$type`.
+	 * @param boolean|string $type Optionally a type name i.e. `'json'` or `true`.
+	 *        1. If not specified, returns the media type name that the client prefers, using
+	 *           a potentially set `type` param, then content negotiation and that fails,
+	 *           ultimately falling back and returning the string `'html'`.
+	 *        2. If a media type name (string) is passed, returns `true` or `false`, indicating
+	 *           whether or not that type is accepted by the client at all.
+	 *        3. If `true`, returns the raw content types from the `Accept` header, parsed into
+	 *           an array and sorted by client preference.
+	 * @return string|boolean|array Returns a type name (i.e. 'json'`) or a
+	 *         boolean or an array, depending on the value of `$type`.
 	 */
 	public function accepts($type = null) {
+		$media = $this->_classes['media'];
+
 		if ($type === true) {
-			return $this->_parseAccept();
+			return $this->_accept ?: ($this->_accept = $this->_parseAccept());
 		}
-		if (!$type && isset($this->params['type'])) {
+		if ($type) {
+			return ($media::negotiate($this) ?: 'html') === $type;
+		}
+		if (isset($this->params['type'])) {
 			return $this->params['type'];
 		}
-		$media = $this->_classes['media'];
 		return $media::negotiate($this) ?: 'html';
 	}
 
@@ -456,9 +482,6 @@ class Request extends \lithium\net\http\Request {
 	 * @return array All the types of content the client can accept.
 	 */
 	protected function _parseAccept() {
-		if ($this->_acceptContent) {
-			return $this->_acceptContent;
-		}
 		$accept = $this->env('HTTP_ACCEPT');
 		$accept = (preg_match('/[a-z,-]/i', $accept)) ? explode(',', $accept) : array('text/html');
 
@@ -480,7 +503,7 @@ class Request extends \lithium\net\http\Request {
 				$accept = array(current($type) => 1) + $accept;
 			}
 		}
-		return $this->_acceptContent = array_keys($accept);
+		return array_keys($accept);
 	}
 
 	/**
@@ -614,7 +637,7 @@ class Request extends \lithium\net\http\Request {
 	 * `Request` object instance as a parameter.
 	 *
 	 * For example, to detect whether a request is from an iPhone, you can do the following:
-	 * {{{ embed:lithium\tests\cases\action\RequestTest::testDetect(11-12) }}}
+	 * ``` embed:lithium\tests\cases\action\RequestTest::testDetect(11-12) ```
 	 *
 	 * @see lithium\action\Request::is()
 	 * @param string $flag The name of the detector check. Used in subsequent calls to `Request::is()`.
@@ -684,11 +707,11 @@ class Request extends \lithium\net\http\Request {
 
 	/**
 	 * Sets or returns the current locale string. For more information, see
-	 * "[Globalization](http://lithify.me/docs/manual/07_globalization)" in the manual.
+	 * "[Globalization](http://li3.me/docs/manual/common-tasks/globalization.md)" in the manual.
 	 *
 	 * @param string $locale An optional locale string like `'en'`, `'en_US'` or `'de_DE'`. If
 	 *        specified, will overwrite the existing locale.
-	 * @return Returns the currently set locale string.
+	 * @return string Returns the currently set locale string.
 	 */
 	public function locale($locale = null) {
 		if ($locale) {
@@ -734,46 +757,44 @@ class Request extends \lithium\net\http\Request {
 	}
 
 	/**
-	 * Normalize the data in $_FILES
+	 * Normalizes the data from the `$_FILES` superglobal.
 	 *
-	 * @return array
+	 * @param array $data Data as formatted in the `$_FILES` superglobal.
+	 * @return array Normalized data.
 	 */
-	protected function _parseFiles() {
-		if (!empty($_FILES)) {
-			$result = array();
+	protected function _parseFiles($data) {
+		$result = array();
 
-			$normalize = function($key, $value) use ($result, &$normalize){
-				foreach ($value as $param => $content) {
-					foreach ($content as $num => $val) {
-						if (is_numeric($num)) {
-							$result[$key][$num][$param] = $val;
-							continue;
-						}
-						if (is_array($val)) {
-							foreach ($val as $next => $one) {
-								$result[$key][$num][$next][$param] = $one;
-							}
-							continue;
-						}
+		$normalize = function($key, $value) use ($result, &$normalize){
+			foreach ($value as $param => $content) {
+				foreach ($content as $num => $val) {
+					if (is_numeric($num)) {
 						$result[$key][$num][$param] = $val;
-					}
-				}
-				return $result;
-			};
-			foreach ($_FILES as $key => $value) {
-				if (isset($value['name'])) {
-					if (is_string($value['name'])) {
-						$result[$key] = $value;
 						continue;
 					}
-					if (is_array($value['name'])) {
-						$result += $normalize($key, $value);
+					if (is_array($val)) {
+						foreach ($val as $next => $one) {
+							$result[$key][$num][$next][$param] = $one;
+						}
+						continue;
 					}
+					$result[$key][$num][$param] = $val;
 				}
 			}
 			return $result;
+		};
+		foreach ($data as $key => $value) {
+			if (isset($value['name'])) {
+				if (is_string($value['name'])) {
+					$result[$key] = $value;
+					continue;
+				}
+				if (is_array($value['name'])) {
+					$result += $normalize($key, $value);
+				}
+			}
 		}
-		return array();
+		return $result;
 	}
 }
 

@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -69,9 +69,9 @@ class Message extends \lithium\core\Object {
 	public $body = null;
 
 	/**
-	 * Adds config values to the public properties when a new object is created.
+	 * Constructor Adds config values to the public properties when a new object is created.
 	 *
-	 * @param array $config Configuration options : default value
+	 * @param array $config Available configuration options are:
 	 *        - `'scheme'` _string_: 'tcp'
 	 *        - `'host'` _string_: 'localhost'
 	 *        - `'port'` _integer_: null
@@ -79,6 +79,7 @@ class Message extends \lithium\core\Object {
 	 *        - `'password'` _string_: null
 	 *        - `'path'` _string_: null
 	 *        - `'body'` _mixed_: null
+	 * @return void
 	 */
 	public function __construct(array $config = array()) {
 		$defaults = array(

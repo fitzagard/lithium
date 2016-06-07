@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -10,6 +10,7 @@ namespace lithium\tests\cases\storage\cache\adapter;
 
 use SplFileInfo;
 use lithium\core\Libraries;
+use lithium\storage\Cache;
 use lithium\storage\cache\adapter\File;
 
 class FileTest extends \lithium\test\Unit {
@@ -25,8 +26,6 @@ class FileTest extends \lithium\test\Unit {
 	/**
 	 * Skip the test if the default File adapter read/write path
 	 * is not read/write-able.
-	 *
-	 * @return void
 	 */
 	public function skip() {
 		$directory = new SplFileInfo(Libraries::get(true, 'resources') . "/tmp/cache/");
@@ -41,6 +40,8 @@ class FileTest extends \lithium\test\Unit {
 	}
 
 	public function tearDown() {
+		$this->File->clear();
+
 		$resources = realpath(Libraries::get(true, 'resources'));
 		$paths = array("{$resources}/tmp/cache", "{$resources}/tmp/cache/templates");
 
@@ -63,16 +64,14 @@ class FileTest extends \lithium\test\Unit {
 	public function testWrite() {
 		$key = 'key';
 		$data = 'data';
+		$keys = array($key => $data);
 		$time = time();
 		$expiry = "@{$time} +1 minute";
 		$time = $time + 60;
 
-		$closure = $this->File->write($key, $data, $expiry);
-		$this->assertInternalType('callable', $closure);
 
-		$params = compact('key', 'data', 'expiry');
-		$result = $closure($this->File, $params, null);
 		$expected = 25;
+		$result = $this->File->write($keys, $expiry);
 		$this->assertEqual($expected, $result);
 
 		$this->assertFileExists(Libraries::get(true, 'resources') . "/tmp/cache/{$key}");
@@ -85,19 +84,35 @@ class FileTest extends \lithium\test\Unit {
 		$this->assertFileNotExists(Libraries::get(true, 'resources') . "/tmp/cache/{$key}");
 	}
 
-	public function testWriteDefaultCacheExpiry() {
+	public function testWriteMulti() {
+		$expiry = '+1 minute';
+		$keys = array(
+			'key1' => 'data1',
+			'key2' => 'data2',
+			'key3' => 'data3'
+		);
+		$result = $this->File->write($keys, $expiry);
+		$this->assertTrue($result);
+
+		foreach ($keys as $key => $data) {
+			$path = Libraries::get(true, 'resources') . "/tmp/cache/{$key}";
+			$result = file_get_contents($path);
+			$this->assertPattern("/{:expiry:[0-9]+}\n{$data}/", $result);
+		}
+
+		$this->File->delete(array_keys($keys));
+	}
+
+	public function testWriteExpiryDefault() {
 		$time = time();
 		$file = new File(array('expiry' => "@{$time} +1 minute"));
 		$key = 'default_keykey';
 		$data = 'data';
+		$keys = array($key => $data);
 		$time = $time + 60;
 
-		$closure = $file->write($key, $data);
-		$this->assertInternalType('callable', $closure);
-
-		$params = compact('key', 'data');
-		$result = $closure($file, $params, null);
 		$expected = 25;
+		$result = $file->write($keys);
 		$this->assertEqual($expected, $result);
 
 		$this->assertFileExists(Libraries::get(true, 'resources') . "/tmp/cache/{$key}");
@@ -110,66 +125,262 @@ class FileTest extends \lithium\test\Unit {
 		$this->assertFileNotExists(Libraries::get(true, 'resources') . "/tmp/cache/{$key}");
 	}
 
+	public function testWriteNoExpiry() {
+		$file = Libraries::get(true, 'resources') . '/tmp/cache/key1';
+		$keys = array('key1' => 'data1');
+
+		$adapter = new File(array('expiry' => null));
+		$expiry = null;
+
+		$result = $adapter->write($keys, $expiry);
+		$this->assertTrue($result);
+
+		$expected = "{:expiry:0}\ndata1";
+		$result = file_get_contents($file);
+		$this->assertEqual($expected, $result);
+
+		unlink($file);
+
+		$adapter = new File(array('expiry' => Cache::PERSIST));
+		$expiry = Cache::PERSIST;
+
+		$result = $adapter->write($keys, $expiry);
+		$this->assertTrue($result);
+
+		$expected = "{:expiry:0}\ndata1";
+		$result = file_get_contents($file);
+		$this->assertEqual($expected, $result);
+
+		unlink($file);
+
+		$adapter = new File();
+		$expiry = Cache::PERSIST;
+
+		$result = $adapter->write($keys, $expiry);
+		$this->assertTrue($result);
+
+		$expected = "{:expiry:0}\ndata1";
+		$result = file_get_contents($file);
+		$this->assertEqual($expected, $result);
+
+		unlink($file);
+	}
+
+	public function testWriteExpiryExpires() {
+		$now = time();
+
+		$keys = array('key1' => 'data1');
+		$time = $now + 5;
+		$expiry = "@{$now} +5 seconds";
+		$this->File->write($keys, $expiry);
+
+		$file = Libraries::get(true, 'resources') . '/tmp/cache/key1';
+
+		$expected = "{:expiry:{$time}}\ndata1";
+		$result = file_get_contents($file);
+		$this->assertEqual($expected, $result);
+	}
+
+	public function testWriteExpiryTtl() {
+		$now = time();
+
+		$keys = array('key1' => 'data1');
+		$time = $now + 5;
+		$expiry = 5;
+		$this->File->write($keys, $expiry);
+
+		$file = Libraries::get(true, 'resources') . '/tmp/cache/key1';
+
+		$expected = "{:expiry:{$time}}\ndata1";
+		$result = file_get_contents($file);
+		$this->assertEqual($expected, $result);
+	}
+
+	public function testWriteWithScope() {
+		$now = time();
+
+		$adapter = new File(array('scope' => 'primary'));
+
+		$time = $now + 5;
+		$expiry = 5;
+
+		$keys = array(
+			'key1' => 'test1'
+		);
+		$adapter->write($keys, $expiry);
+
+		$file = Libraries::get(true, 'resources') . '/tmp/cache/primary_key1';
+
+		$expected = "{:expiry:{$time}}\ntest1";
+		$result = file_get_contents($file);
+		$this->assertEqual($expected, $result);
+	}
+
 	public function testRead() {
 		$key = 'key';
+		$keys = array($key);
 		$time = time() + 60;
-
-		$closure = $this->File->read($key);
-		$this->assertInternalType('callable', $closure);
 
 		$path = Libraries::get(true, 'resources') . "/tmp/cache/{$key}";
 		file_put_contents($path, "{:expiry:$time}\ndata");
 		$this->assertFileExists($path);
 
-		$params = compact('key');
-		$result = $closure($this->File, $params, null);
-		$this->assertEqual('data', $result);
+		$params = compact('keys');
+		$result = $this->File->read($keys);
+		$this->assertEqual(array($key => 'data'), $result);
 
 		unlink($path);
+	}
 
-		$key = 'non_existent';
-		$params = compact('key');
-		$closure = $this->File->read($key);
-		$this->assertInternalType('callable', $closure);
+	public function testReadMulti() {
+		$time = time() + 60;
+		$keys = array(
+			'key1' => 'data1',
+			'key2' => 'data2',
+			'key3' => 'data3'
+		);
+		foreach ($keys as $key => $data) {
+			$path = Libraries::get(true, 'resources') . "/tmp/cache/{$key}";
+			file_put_contents($path, "{:expiry:{$time}}\n{$data}");
+		}
 
-		$result = $closure($this->File, $params, null);
-		$this->assertFalse($result);
+		$expected = array(
+			'key1' => 'data1',
+			'key2' => 'data2',
+			'key3' => 'data3'
+		);
+		$keys = array(
+			'key1',
+			'key2',
+			'key3'
+		);
+		$result = $this->File->read($keys);
+		$this->assertEqual($expected, $result);
+
+		$this->File->delete($keys);
 	}
 
 	public function testExpiredRead() {
 		$key = 'expired_key';
+		$keys = array($key);
 		$time = time() + 1;
 
-		$closure = $this->File->read($key);
-		$this->assertInternalType('callable', $closure);
 		$path = Libraries::get(true, 'resources') . "/tmp/cache/{$key}";
 
 		file_put_contents($path, "{:expiry:$time}\ndata");
 		$this->assertFileExists($path);
 
 		sleep(2);
-		$params = compact('key');
-		$this->assertFalse($closure($this->File, $params, null));
 
+		$expected = array();
+		$result= $this->File->read($keys);
+		$this->assertIdentical($expected, $result);
+	}
+
+	public function testReadKeyThatDoesNotExist() {
+		$key = 'does_not_exist';
+		$keys = array($key);
+
+		$expected = array();
+		$result = $this->File->read($keys);
+		$this->assertIdentical($expected, $result);
+	}
+
+	public function testReadWithScope() {
+		$adapter = new File(array('scope' => 'primary'));
+		$time = time() + 60;
+
+		$keys = array(
+			'primary_key1' => 'test1',
+			'key1' => 'test2'
+		);
+		foreach ($keys as $key => $data) {
+			$path = Libraries::get(true, 'resources') . "/tmp/cache/{$key}";
+			file_put_contents($path, "{:expiry:{$time}}\n{$data}");
+		}
+
+		$keys = array('key1');
+		$expected = array('key1' => 'test1');
+		$result = $adapter->read($keys);
+		$this->assertEqual($expected, $result);
+	}
+
+	public function testWriteAndReadNull() {
+		$expiry = '+1 minute';
+		$keys = array(
+			'key1' => null
+		);
+		$result = $this->File->write($keys);
+		$this->assertTrue($result);
+
+		$expected = $keys;
+		$result = $this->File->read(array_keys($keys));
+		$this->assertEqual($expected, $result);
+	}
+
+	public function testWriteAndReadNullMulti() {
+		$expiry = '+1 minute';
+		$keys = array(
+			'key1' => null,
+			'key2' => 'data2'
+		);
+		$result = $this->File->write($keys);
+		$this->assertTrue($result);
+
+		$expected = $keys;
+		$result = $this->File->read(array_keys($keys));
+		$this->assertEqual($expected, $result);
+
+		$keys = array(
+			'key1' => null,
+			'key2' => null
+		);
+		$result = $this->File->write($keys);
+		$this->assertTrue($result);
 	}
 
 	public function testDelete() {
 		$key = 'key_to_delete';
+		$keys = array($key);
 		$time = time() + 1;
 		$path = Libraries::get(true, 'resources') . "/tmp/cache/{$key}";
 
 		file_put_contents($path, "{:expiry:$time}\ndata");
 		$this->assertFileExists($path);
 
-		$closure = $this->File->delete($key);
-		$this->assertInternalType('callable', $closure);
 
-		$params = compact('key');
-		$this->assertTrue($closure($this->File, $params, null));
+		$result = $this->File->delete($keys);
+		$this->assertTrue($result);
 
 		$key = 'non_existent';
-		$params = compact('key');
-		$this->assertFalse($closure($this->File, $params, null));
+		$keys = array($key);
+		$result = $this->File->delete($keys);
+		$this->assertFalse($result);
+	}
+
+	public function testDeleteWithScope() {
+		$adapter = new File(array('scope' => 'primary'));
+		$time = time() + 60;
+
+		$keys = array(
+			'primary_key1' => 'test1',
+			'key1' => 'test2'
+		);
+		foreach ($keys as $key => $data) {
+			$path = Libraries::get(true, 'resources') . "/tmp/cache/{$key}";
+			file_put_contents($path, "{:expiry:{$time}}\n{$data}");
+		}
+
+		$keys = array('key1');
+		$adapter->delete($keys);
+
+		$file = Libraries::get(true, 'resources') . "/tmp/cache/key1";
+		$result = file_exists($file);
+		$this->assertTrue($result);
+
+		$file = Libraries::get(true, 'resources') . "/tmp/cache/primary_key1";
+		$result = file_exists($file);
+		$this->assertFalse($result);
 	}
 
 	public function testClear() {
@@ -186,16 +397,96 @@ class FileTest extends \lithium\test\Unit {
 		$this->assertTrue($result);
 	}
 
-	public function testIncrement() {
-		$key = 'key_to_increment';
-		$result = $this->File->increment($key);
-		$this->assertEqual(false, $result);
+	public function testClean() {
+		$time = time() - 10;
+		$path = Libraries::get(true, 'resources') . "/tmp/cache/key_to_clean";
+		file_put_contents($path, "{:expiry:$time}\ndata");
+
+		$result = $this->File->clean();
+		$this->assertTrue($result);
+		$this->assertFileNotExists($path);
+
+		$time = time() + 10;
+		$path = Libraries::get(true, 'resources') . "/tmp/cache/key_not_to_clean";
+		file_put_contents($path, "{:expiry:$time}\ndata");
+
+		$result = $this->File->clean();
+		$this->assertTrue($result);
+		$this->assertFileExists($path);
 	}
 
 	public function testDecrement() {
-		$key = 'key_to_decrement';
+		$key = __FUNCTION__;
+
+		$result = $this->File->write(array($key => 5));
+		$this->assertTrue($result);
+
+		$expected = 4;
 		$result = $this->File->decrement($key);
-		$this->assertEqual(false, $result);
+		$this->assertEqual($expected, $result);
+
+		$expected = array($key => 4);
+		$result = $this->File->read(array($key));
+		$this->assertEqual($expected, $result);
+	}
+
+	public function testDecrementNotExistent() {
+		$key = __FUNCTION__;
+
+		$result = $this->File->decrement($key);
+		$this->assertFalse($result);
+	}
+
+	public function testDecrementWithScope() {
+		$adapter = new File(array('scope' => 'primary'));
+
+		$this->File->write(array('primary_key1' => 5));
+		$this->File->write(array('key1' => 10));
+
+		$expected = 4;
+		$result = $adapter->decrement('key1');
+		$this->assertEqual($expected, $result);
+
+		$expected = array('key1' => 4);
+		$result = $adapter->read(array('key1'));
+		$this->assertEqual($expected, $result);
+	}
+
+	public function testIncrement() {
+		$key = __FUNCTION__;
+
+		$result = $this->File->write(array($key => 5));
+		$this->assertTrue($result);
+
+		$expected = 6;
+		$result = $this->File->increment($key);
+		$this->assertEqual($expected, $result);
+
+		$expected = array($key => 6);
+		$result = $this->File->read(array($key));
+		$this->assertEqual($expected, $result);
+	}
+
+	public function testIncrementNotExistent() {
+		$key = __FUNCTION__;
+
+		$result = $this->File->increment($key);
+		$this->assertFalse($result);
+	}
+
+	public function testIncrementWithScope() {
+		$adapter = new File(array('scope' => 'primary'));
+
+		$this->File->write(array('primary_key1' => 5));
+		$this->File->write(array('key1' => 10));
+
+		$expected = 6;
+		$result = $adapter->increment('key1');
+		$this->assertEqual($expected, $result);
+
+		$expected = array('key1' => 6);
+		$result = $adapter->read(array('key1'));
+		$this->assertEqual($expected, $result);
 	}
 }
 

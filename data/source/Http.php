@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -62,9 +62,10 @@ class Http extends \lithium\data\Source {
 	);
 
 	/**
-	 * Constructor
+	 * Constructor.
 	 *
 	 * @param array $config
+	 * @return void
 	 */
 	public function __construct(array $config = array()) {
 		$defaults = array(
@@ -139,11 +140,13 @@ class Http extends \lithium\data\Source {
 	}
 
 	/**
-	 * Custom check to determine if our given magic methods can be responded to.
+	 * Determines if a given method can be called.
 	 *
-	 * @param  string  $method     Method name.
-	 * @param  bool    $internal   Interal call or not.
-	 * @return bool
+	 * @param string $method Name of the method.
+	 * @param boolean $internal Provide `true` to perform check from inside the
+	 *                class/object. When `false` checks also for public visibility;
+	 *                defaults to `false`.
+	 * @return boolean Returns `true` if the method can be called, `false` otherwise.
 	 */
 	public function respondsTo($method, $internal = false) {
 		return isset($this->_methods[$method]) || parent::respondsTo($method, $internal);
@@ -154,7 +157,7 @@ class Http extends \lithium\data\Source {
 	 *
 	 * @param array $query a query object
 	 * @param array $options array.
-	 * @return result
+	 * @return mixed
 	 */
 	public function send($query = null, array $options = array()) {
 		$query = !is_object($query) ? new Query((array) $query) : $query;
@@ -164,12 +167,13 @@ class Http extends \lithium\data\Source {
 		$insert = (array) $options + $data + $query->export($this);
 
 		if (preg_match_all('/\{:(\w+)\}/', $path, $matches)) {
-			$keys = array_flip($matches[1]);
 			$data = array_diff_key($data,  array_flip($matches[1]));
 		}
-		$path = String::insert($path, $insert, array('clean' => true));
-		$data += (array) $query->conditions() + array('limit' => $query->limit());
-		return $this->connection->{$method}($path, $data, (array) $options);
+		return $this->connection->{$method}(
+			String::insert($path, $insert, array('clean' => true)),
+			$data + (array) $query->conditions() + array('limit' => $query->limit()),
+			(array) $options
+		);
 	}
 
 	/**
@@ -223,7 +227,7 @@ class Http extends \lithium\data\Source {
 	 *
 	 * @param object $query
 	 * @param array $options
-	 * @return void
+	 * @return mixed
 	 * @filter
 	 */
 	public function create($query, array $options = array()) {

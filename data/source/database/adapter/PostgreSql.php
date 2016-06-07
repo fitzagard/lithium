@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright	  Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright	  Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license		  http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -12,11 +12,17 @@ use PDO;
 use PDOException;
 
 /**
- * Extends the `Database` class to implement the necessary SQL-formatting and resultset-fetching
- * features for working with PostgreSQL databases.
+ * PostgreSQL database driver. Extends the `Database` class to implement the necessary
+ * SQL-formatting and resultset-fetching features for working with PostgreSQL databases.
  *
- * For more information on configuring the database connection, see the `__construct()` method.
+ * - Implements timezone support.
+ * - Implements schema/searchPath support.
  *
+ * For more information on configuring the database connection, see
+ * the `__construct()` method.
+ *
+ * @see lithium\data\source\database\adapter\PostgreSql::timezone()
+ * @see lithium\data\source\database\adapter\PostgreSql::searchPath()
  * @see lithium\data\source\database\adapter\PostgreSql::__construct()
  */
 class PostgreSql extends \lithium\data\source\Database {
@@ -77,35 +83,23 @@ class PostgreSql extends \lithium\data\source\Database {
 	protected $_quotes = array('"', '"');
 
 	/**
-	 * PostgreSQL-specific value denoting whether or not table aliases should be used in DELETE and
-	 * UPDATE queries.
-	 *
-	 * @var boolean
-	 */
-	protected $_useAlias = true;
-
-	/**
-	 * Constructs the PostgreSQL adapter and sets the default port to 5432.
+	 * Constructor. Constructs the PostgreSQL adapter and sets the default port to 5432.
 	 *
 	 * @see lithium\data\source\Database::__construct()
 	 * @see lithium\data\Source::__construct()
 	 * @see lithium\data\Connections::add()
-	 * @param array $config Configuration options for this class. For additional configuration,
-	 *        see `lithium\data\source\Database` and `lithium\data\Source`. Available options
-	 *        defined by this class:
-	 *        - `'database'`: The name of the database to connect to. Defaults to 'lithium'.
-	 *        - `'host'`: The IP or machine name where PostgreSQL is running, followed by a colon,
-	 *        followed by a port number or socket. Defaults to `'localhost:5432'`.
-	 *        - `'persistent'`: If a persistent connection (if available) should be made.
-	 *        Defaults to true.
-	 *        - `'schema'`: The name of the database schema to use. Defaults to 'public'
-	 *        Typically, these parameters are set in `Connections::add()`, when adding the
-	 *        adapter to the list of active connections.
+	 * @param array $config The available configuration options are the following. Further
+	 *        options are inherited from the parent classes. Typically, these parameters are
+	 *        set in `Connections::add()`, when adding the adapter to the list of active
+	 *        connections.
+	 *        - `'host'` _string_: Defaults to `'localhost:5432'`.
+	 *        - `'schema'` _string_: The name of the database schema to use. Defaults to `'public'`.
+	 *        - `'timezone'` _string_: The timezone to use. Defaults to `'null'`
+	 * @return void
 	 */
 	public function __construct(array $config = array()) {
 		$defaults = array(
 			'host' => 'localhost:5432',
-			'encoding' => null,
 			'schema' => 'public',
 			'timezone' => null
 		);
@@ -136,10 +130,13 @@ class PostgreSql extends \lithium\data\source\Database {
 	}
 
 	/**
-	 * Connects to the database using the options provided to the class constructor.
+	 * Connects to the database by constructing DSN string and creating a PDO intance using
+	 * the parent class. Will set specific options on the connection as provided (timezone,
+	 * schema).
 	 *
-	 * @return boolean Returns `true` if a database connection could be established, otherwise
-	 *         `false`.
+	 * @see lithium\data\source\dataase\adapter\PostgreSql::timezone()
+	 * @return boolean Returns `true` if a database connection could be established,
+	 *         otherwise `false`.
 	 */
 	public function connect() {
 		if (!$this->_config['dsn']) {
@@ -168,7 +165,7 @@ class PostgreSql extends \lithium\data\source\Database {
 	 *
 	 * @param string $model The fully-name-spaced class name of the model object making the request.
 	 * @return array Returns an array of sources to which models can connect.
-	 * @filter This method can be filtered.
+	 * @filter
 	 */
 	public function sources($model = null) {
 		$_config = $this->_config;
@@ -185,8 +182,8 @@ class PostgreSql extends \lithium\data\source\Database {
 			}
 			$sources = array();
 
-			while ($data = $result->next()) {
-				$sources[] = array_shift($data);
+			foreach ($result as $row) {
+				$sources[] = $row[0];
 			}
 			return $sources;
 		});
@@ -204,7 +201,7 @@ class PostgreSql extends \lithium\data\source\Database {
 	 *         array keys are the available fields, and the values are arrays describing each
 	 *         field, containing the following keys:
 	 *         - `'type'`: The field type name
-	 * @filter This method can be filtered.
+	 * @filter
 	 */
 	public function describe($entity, $fields = array(), array $meta = array()) {
 		$schema = $this->_config['schema'];
@@ -253,7 +250,7 @@ class PostgreSql extends \lithium\data\source\Database {
 	}
 
 	/**
-	 * Gets or sets the search path for the connection
+	 * Gets or sets the search path for the connection.
 	 *
 	 * @param $searchPath
 	 * @return mixed If setting the searchPath; returns ture on success, else false
@@ -357,7 +354,7 @@ class PostgreSql extends \lithium\data\source\Database {
 	 * @param string $conditions
 	 * @param string $context
 	 * @param array $options
-	 * @return void
+	 * @return string
 	 */
 	public function conditions($conditions, $context, array $options = array()) {
 		return parent::conditions($conditions, $context, $options);
@@ -369,7 +366,7 @@ class PostgreSql extends \lithium\data\source\Database {
 	 * @see lithium\data\source\Database::renderCommand()
 	 * @param string $sql The sql string to execute
 	 * @param array $options Available options:
-	 * @return resource Returns the result resource handle if the query is successful.
+	 * @return \lithium\data\source\Result Returns a result object if the query was successful.
 	 * @filter
 	 */
 	protected function _execute($sql, array $options = array()) {
@@ -379,7 +376,6 @@ class PostgreSql extends \lithium\data\source\Database {
 
 		return $this->_filter(__METHOD__, $params, function($self, $params) use ($conn) {
 			$sql = $params['sql'];
-			$options = $params['options'];
 
 			try {
 				$resource = $conn->query($sql);
@@ -425,8 +421,8 @@ class PostgreSql extends \lithium\data\source\Database {
 
 		if (isset($column['length']) && $column['length']) {
 			$length = explode(',', $column['length']) + array(null, null);
-			$column['length'] = $length[0] ? intval($length[0]) : null;
-			$length[1] ? $column['precision'] = intval($length[1]) : null;
+			$column['length'] = $length[0] ? (integer) $length[0] : null;
+			$length[1] ? $column['precision'] = (integer) $length[1] : null;
 		}
 
 		switch (true) {
@@ -488,13 +484,15 @@ class PostgreSql extends \lithium\data\source\Database {
 	}
 
 	/**
-	 * Helper for `DatabaseSchema::_column()`
+	 * Helper for `Database::column()`.
 	 *
-	 * @param array $field A field array
-	 * @return string SQL column string
+	 * @see lithium\data\Database::column()
+	 * @param array $field A field array.
+	 * @return string SQL column string.
 	 */
 	protected function _buildColumn($field) {
 		extract($field);
+
 		if ($type === 'float' && $precision) {
 			$use = 'numeric';
 		}
@@ -519,6 +517,130 @@ class PostgreSql extends \lithium\data\source\Database {
 		}
 
 		return $out;
+	}
+
+	/**
+	 * Helper method for `PostgreSql::_quryExport()` to export data
+	 * for use in distinct query.
+	 *
+	 * @see lithium\data\source\PostgreSql::_quryExport()
+	 * @param object $query The query object.
+	 * @return array Returns an array with the fields as the first
+	 *         value and the orders as the second value.
+	 */
+	protected function _distinctExport($query) {
+		$model = $query->model();
+		$orders = $query->order();
+		$result = array(
+			'fields' => array(),
+			'orders' => array(),
+		);
+
+		if (is_string($orders)) {
+			$direction = 'ASC';
+			if (preg_match('/^(.*?)\s+((?:A|DE)SC)$/i', $orders, $match)) {
+				$orders = $match[1];
+				$direction = $match[2];
+			}
+			$orders = array($orders => $direction);
+		}
+
+		if (!is_array($orders)) {
+			return array_values($result);
+		}
+
+		foreach ($orders as $column => $dir) {
+			if (is_int($column)) {
+				$column = $dir;
+				$dir = 'ASC';
+			}
+
+			if ($model && $model::schema($column)) {
+				$name = $this->name($query->alias()) . '.' . $this->name($column);
+				$alias = $this->name('_' . $query->alias() . '_' . $column . '_');
+			} else {
+				list($alias, $field) = $this->_splitFieldname($column);
+				$name = $this->name($column);
+				$alias = $this->name('_' . $alias . '_' . $field . '_');
+			}
+
+			$result['fields'][] = "{$name} AS {$alias}";
+			$result['orders'][] = "{$alias} {$dir}";
+		}
+		return array_values($result);
+	}
+
+	/**
+	 * Helper method for `Database::read()` to export query while handling additional joins
+	 * when using relationships and limited result sets. Filters conditions on subsequent
+	 * queries to just the ones applying to the relation.
+	 *
+	 * @see lithium\data\source\Database::read()
+	 * @param object $query The query object.
+	 * @return array The exported query returned by reference.
+	 */
+	protected function &_queryExport($query) {
+		$data = $query->export($this);
+
+		if (!$query->limit() || !($model = $query->model())) {
+			return $data;
+		}
+
+		foreach ($query->relationships() as $relation) {
+			if ($relation['type'] !== 'hasMany') {
+				continue;
+			}
+			$pk = $this->name($model::meta('name') . '.' . $model::key());
+
+			if ($query->order()) {
+				list($fields, $orders) = $this->_distinctExport($query);
+				array_unshift($fields, "DISTINCT ON($pk) $pk AS _ID_");
+
+				$command = $this->renderCommand('read', array(
+					'limit' => null, 'order' => null,
+					'fields' => implode(', ', $fields)
+				) + $data);
+				$command = rtrim($command, ';');
+
+				$command = $this->renderCommand('read', array(
+					'source' => "( $command ) AS _TEMP_",
+					'fields' => '_ID_',
+					'order' => "ORDER BY " . implode(', ', $orders),
+					'limit' => $data['limit'],
+				));
+			} else {
+				$command = $this->renderCommand('read', array(
+					'fields' => "DISTINCT({$pk}) AS _ID_"
+				) + $data);
+			}
+
+			$result = $this->_execute($command);
+			$ids = array();
+
+			foreach ($result as $row) {
+				$ids[] = $row[0];
+			}
+			if (!$ids) {
+				$data = null;
+				break;
+			}
+
+			$conditions = array();
+			$relations = array_keys($query->relationships());
+			$pattern = '/^(' . implode('|', $relations) . ')\./';
+			foreach ($query->conditions() as $key => $value) {
+				if (preg_match($pattern, $key)) {
+					$conditions[$key] = $value;
+				}
+			}
+			$data['conditions'] = $this->conditions(
+				array($pk => $ids) + $conditions, $query
+			);
+
+			$data['limit'] = '';
+			break;
+		}
+		return $data;
 	}
 }
 

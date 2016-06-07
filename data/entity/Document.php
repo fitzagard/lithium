@@ -2,14 +2,13 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
 namespace lithium\data\entity;
 
 use RuntimeException;
-use UnexpectedValueException;
 
 /**
  * `Document` is an alternative to the `entity\Record` class, which is optimized for
@@ -17,7 +16,7 @@ use UnexpectedValueException;
  * A `Document` object's fields can represent a collection of both simple and complex data types,
  * as well as other `Document` objects. Given the following data (document) structure:
  *
- * {{{
+ * ```json
  * {
  * 	_id: 12345.
  * 	name: 'Acme, Inc.',
@@ -27,15 +26,16 @@ use UnexpectedValueException;
  * 		'Moe': { email: 'moe@acme.com' }
  * 	}
  * }
- * }}}
+ * ```
  *
  * You can query the object as follows:
- *
- * {{{$acme = Company::find(12345);}}}
+ * ```
+ * $acme = Company::find(12345);
+ * ```
  *
  * This returns a `Document` object, populated with the raw representation of the data.
- *
- * {{{print_r($acme->to('array'));
+ * ```
+ * print_r($acme->to('array'));
  *
  * // Yields:
  * //	array(
@@ -46,17 +46,20 @@ use UnexpectedValueException;
  * //		'Curly' => array('email' => 'curly@acme.com'),
  * //		'Moe' => array('email' => 'moe@acme.com')
  * //	)
- * //)}}}
+ * //)
+ * ```
  *
  * As with other database objects, a `Document` exposes its fields as object properties, like so:
- *
- * {{{echo $acme->name; // echoes 'Acme, Inc.'}}}
+ * ```
+ * echo $acme->name; // echoes 'Acme, Inc.'
+ * ```
  *
  * However, accessing a field containing a data set will return that data set wrapped in a
  * sub-`Document` object., i.e.:
- *
- * {{{$employees = $acme->employees;
- * // returns a Document object with the data in 'employees'}}}
+ * ```
+ * $employees = $acme->employees;
+ * // returns a Document object with the data in 'employees'
+ * ```
  */
 class Document extends \lithium\data\Entity implements \Iterator, \ArrayAccess {
 
@@ -274,23 +277,27 @@ class Document extends \lithium\data\Entity implements \Iterator, \ArrayAccess {
 	 * @return boolean True if the field specified in `$name` exists, false otherwise.
 	 */
 	public function __isset($name) {
+		if (strpos($name, '.')) {
+			return $this->_getNested($name) !== null;
+		}
 		return isset($this->_updated[$name]);
 	}
 
 	/**
 	 * PHP magic method used when unset() is called on a `Document` instance.
 	 * Use case for this would be when you wish to edit a document and remove a field, ie.:
-	 * {{{
+	 * ```
 	 * $doc = Post::find($id);
 	 * unset($doc->fieldName);
 	 * $doc->save();
-	 * }}}
+	 * ```
 	 *
 	 * @param string $name The name of the field to remove.
 	 * @return void
 	 */
 	public function __unset($name) {
 		$parts = explode('.', $name, 2);
+
 		if (isset($parts[1])) {
 			unset($this->{$parts[0]}[$parts[1]]);
 		} else {
@@ -303,9 +310,9 @@ class Document extends \lithium\data\Entity implements \Iterator, \ArrayAccess {
 	 * Allows several properties to be assigned at once.
 	 *
 	 * For example:
-	 * {{{
+	 * ```
 	 * $doc->set(array('title' => 'Lorem Ipsum', 'value' => 42));
-	 * }}}
+	 * ```
 	 *
 	 * @param array $data An associative array of fields and values to assign to the `Document`.
 	 * @param array $options
@@ -447,32 +454,6 @@ class Document extends \lithium\data\Entity implements \Iterator, \ArrayAccess {
 			$this->_valid = true;
 		}
 		return $this->_valid ? $this->__get(key($this->_data)) : null;
-	}
-
-	/**
-	 * Safely (atomically) increments the value of the specified field by an arbitrary value.
-	 * Defaults to `1` if no value is specified. Throws an exception if the specified field is
-	 * non-numeric.
-	 *
-	 * @param string $field The name of the field to be incrememnted.
-	 * @param integer|string $value The value to increment the field by. Defaults to `1` if this
-	 *               parameter is not specified.
-	 * @return integer Returns the current value of `$field`, based on the value retrieved from the
-	 *         data source when the entity was loaded, plus any increments applied. Note that it
-	 *         may not reflect the most current value in the persistent backend data source.
-	 * @throws UnexpectedValueException Throws an exception when `$field` is set to a non-numeric
-	 *         type.
-	 */
-	public function increment($field, $value = 1) {
-		if (!isset($this->_increment[$field])) {
-			$this->_increment[$field] = 0;
-		}
-		$this->_increment[$field] += $value;
-
-		if (!is_numeric($this->_updated[$field])) {
-			throw new UnexpectedValueException("Field `{$field}` cannot be incremented.");
-		}
-		return $this->_updated[$field] += $value;
 	}
 }
 

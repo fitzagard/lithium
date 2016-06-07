@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -23,8 +23,9 @@ class CrudTest extends \lithium\tests\integration\data\Base {
 	 */
 	public function skip() {
 		parent::connect($this->_connection);
+
 		if (!class_exists('li3_fixtures\test\Fixtures')) {
-			$this->skipIf(true, "These tests need `'li3_fixtures'` to be runned.");
+			$this->skipIf(true, 'Need `li3_fixtures` to run tests.');
 		}
 	}
 
@@ -105,14 +106,16 @@ class CrudTest extends \lithium\tests\integration\data\Base {
 	}
 
 	public function testCrudMulti() {
-		$cities  = Galleries::create(array('name' => 'Cities', 'active' => true));
-		$flowers = Galleries::create(array('name' => 'Flowers', 'active' => true));
-		$poneys  = Galleries::create(array('name' => 'Poneys', 'active' => true));
+		$records = array(
+			'cities'  => Galleries::create(array('name' => 'Cities', 'active' => true)),
+			'flowers' => Galleries::create(array('name' => 'Flowers', 'active' => true)),
+			'poneys'  => Galleries::create(array('name' => 'Poneys', 'active' => true))
+		);
 
-		foreach (array('cities', 'flowers', 'poneys') as $key) {
-			$this->assertFalse(${$key}->exists());
-			$this->assertTrue(${$key}->save());
-			$this->assertTrue(${$key}->exists());
+		foreach ($records as $key => $record) {
+			$this->assertFalse($record->exists());
+			$this->assertTrue($record->save());
+			$this->assertTrue($record->exists());
 		}
 		$this->assertEqual(3, Galleries::count());
 

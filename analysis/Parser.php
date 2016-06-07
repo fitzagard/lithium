@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2012, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -134,7 +134,7 @@ class Parser extends \lithium\core\StaticObject {
 		};
 
 		$capture = function($token) use (&$matches, &$patternMatch, $tokens, $breaks, $options) {
-			if (is_null($token)) {
+			if ($token === null) {
 				$matches = $patternMatch = array();
 				return false;
 			}
@@ -286,7 +286,7 @@ class Parser extends \lithium\core\StaticObject {
 	 * Helper function to normalize parameters for token matching.
 	 *
 	 * @see lithium\analysis\Parser::match()
-	 * @param array $parameters Params to be normalized.
+	 * @param array|string $parameters Params to be normalized.
 	 * @return array Normalized parameters.
 	 */
 	protected static function _prepareMatchParams($parameters) {

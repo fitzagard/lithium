@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -43,13 +43,14 @@ abstract class Socket extends \lithium\core\Object {
 	 * Constructor.
 	 *
 	 * @param array $config Available configuration options are:
-	 *              - `'persistent'`: Use a persistent connection (defaults to `false`).
-	 *              - `'protocol'`: Transfer protocol to use (defaults to `'tcp'`).
-	 *              - `'host'`: Host name or address (defaults to `'localhost'`).
-	 *              - `'login'`: Username for a login (defaults to `'root'`).
-	 *              - `'password'`: Password for a login (defaults to `''`).
-	 *              - `'port'`: Host port (defaults to `80`).
-	 *              - `'timeout'`: Seconds after opening the socket times out (defaults to `30`).
+	 *        - `'persistent'`: Use a persistent connection (defaults to `false`).
+	 *        - `'protocol'`: Transfer protocol to use (defaults to `'tcp'`).
+	 *        - `'host'`: Host name or address (defaults to `'localhost'`).
+	 *        - `'login'`: Username for a login (defaults to `'root'`).
+	 *        - `'password'`: Password for a login (defaults to `''`).
+	 *        - `'port'`: Host port (defaults to `80`).
+	 *        - `'timeout'`: Seconds after opening the socket times out (defaults to `30`).
+	 * @return void
 	 */
 	public function __construct(array $config = array()) {
 		$defaults = array(
@@ -133,7 +134,7 @@ abstract class Socket extends \lithium\core\Object {
 	/**
 	 * Aggregates read and write methods into a coherent request response
 	 *
-	 * @param mixed $message a request object based on `\lithium\net\Message`
+	 * @param \lithium\net\Message $message
 	 * @param array $options
 	 *              - '`response`': a fully-namespaced string for the response object
 	 * @return object a response object based on `\lithium\net\Message`

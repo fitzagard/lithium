@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -27,6 +27,18 @@ class DocumentTest extends \lithium\tests\integration\data\Base {
 	public function tearDown() {
 		Galleries::remove();
 		Galleries::reset();
+	}
+
+	/**
+	 * Tests that a successful find on an empty collection doesn't error out
+	 * when using count on the resulting collection returned. See issue #1042.
+	 */
+	public function testFindOnEmptyCollection() {
+		$result = Galleries::find('all');
+
+		$expected = 0;
+		$result = $result->count();
+		$this->assertIdentical($expected, $result);
 	}
 
 	public function testUpdateWithNewArray() {

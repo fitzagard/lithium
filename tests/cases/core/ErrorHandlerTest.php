@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2009, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -48,9 +48,15 @@ class ErrorHandlerTest extends \lithium\test\Unit {
 		$expected = 'Test!';
 		$this->assertEqual($expected, $result['message']);
 
-		$this->expectException('/Test/');
-		trigger_error('Test warning!', E_USER_WARNING);
+		$backup = error_reporting();
+		error_reporting($backup | E_WARNING);
+
+		$this->assertException('/Test/', function() {
+			trigger_error('Test warning!', E_USER_WARNING);
+		});
 		$this->assertCount(1, $this->errors);
+
+		error_reporting($backup);
 	}
 
 	public function testExceptionSubclassCatching() {

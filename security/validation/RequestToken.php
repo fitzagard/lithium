@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -16,24 +16,24 @@ use lithium\util\Set;
  * The `RequestToken` class creates cryptographically-secure tokens and keys that can be used to
  * validate the authenticity of client requests.
  *
- * `RequestToken` will persist the token for the life of
- * the client session, and generate per-request keys that will match against that token.
+ * `RequestToken` will persist the token for the life of the client session, and generate
+ * per-request keys that will match against that token.
  *
- * Using these token/key pairs in forms and other non-idempotent requests will help you secure your
- * application against cross-site request forgeries, or CSRF attacks.
+ * Using these token/key pairs in forms and other non-idempotent requests will help you secure
+ * your application against cross-site request forgeries, or CSRF attacks.
  *
  * ### Example
  *
- * {{{
+ * ```
  * // views/comments/add.html.php:
  * // ...
  * <?=$this->form->create($object); ?>
  * 	<?=$this->security->requestToken(); ?>
  * 	// Other fields...
  * <?=$this->form->end(); ?>
- * }}}
+ * ```
  *
- * {{{
+ * ```
  * // controllers/CommentsController.php:
  * public function add() {
  * 	if ($this->request->data && !RequestToken::check($this->request)) {
@@ -44,7 +44,7 @@ use lithium\util\Set;
  * 	}
  * 	// Handle a normal request...
  * }
- * }}}
+ * ```
  *
  * @link http://shiflett.org/articles/cross-site-request-forgeries Cross-Site Request Forgeries
  * @see lithium\template\helper\Security::requestToken()
@@ -135,19 +135,19 @@ class RequestToken {
 	 *
 	 * For example, the following two controller code samples are equivalent:
 	 *
-	 * {{{
+	 * ```
 	 * $key = $this->request->data['security']['token'];
 	 *
 	 * if (!RequestToken::check($key)) {
 	 * 	// Handle invalid request...
 	 * }
-	 * }}}
+	 * ```
 	 *
-	 * {{{
+	 * ```
 	 * if (!RequestToken::check($this->request)) {
 	 * 	// Handle invalid request...
 	 * }
-	 * }}}
+	 * ```
 	 *
 	 * @param mixed $key Either the actual key as a string, or a `Request` object containing the
 	 *              key.

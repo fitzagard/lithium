@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -40,13 +40,20 @@ class FileTest extends \lithium\test\Unit {
 	}
 
 	public function testRenderingWithNoExtraction() {
+		$backup = error_reporting();
+		error_reporting(E_ALL);
+
 		$file = new File(array('extract' => false));
-		$this->expectException('Undefined variable: foo');
-		$content = $file->render("{$this->_path}/template1.html.php", array('foo' => 'bar'));
-		$this->assertEmpty($content);
+		$path = $this->_path;
+
+		$this->assertException('Undefined variable: foo', function()  use ($file, $path) {
+			$file->render("{$path}/template1.html.php", array('foo' => 'bar'));
+		});
 
 		$content = $file->render("{$this->_path}/template2.html.php", array('foo' => 'bar'));
 		$this->assertEqual('bar', $content);
+
+		error_reporting($backup);
 	}
 
 	public function testContextOffsetManipulation() {
@@ -76,7 +83,8 @@ class FileTest extends \lithium\test\Unit {
 		$template = $file->template('template', array(
 			'controller' => 'pages', 'template' => 'home', 'type' => 'html'
 		));
-		$this->assertPattern('/template_views_pages_home\.html_[0-9]+/', $template);
+		$pattern = '/template_pages_home\.html_[0-9a-f]+/';
+		$this->assertPattern($pattern, $template);
 
 		$file = new File(array('compile' => false, 'paths' => array(
 			'template' => '{:library}/views/{:controller}/{:template}.{:type}.php'
@@ -86,10 +94,11 @@ class FileTest extends \lithium\test\Unit {
 		));
 		$this->assertPattern('/\/views\/pages\/home\.html\.php$/', $template);
 
-		$this->expectException('/Template not found/');
-		$file->template('template', array(
-			'controller' => 'pages', 'template' => 'foo', 'type' => 'html'
-		));
+		$this->assertException('/Template not found/', function() use ($file) {
+			$file->template('template', array(
+				'controller' => 'pages', 'template' => 'foo', 'type' => 'html'
+			));
+		});
 	}
 
 	public function testInvalidTemplateType() {
@@ -97,8 +106,9 @@ class FileTest extends \lithium\test\Unit {
 			'template' => '{:library}/views/{:controller}/{:template}.{:type}.php'
 		)));
 
-		$this->expectException("Invalid template type 'invalid'.");
-		$template = $file->template('invalid', array('template' => 'foo'));
+		$this->assertException("Invalid template type 'invalid'.", function() use ($file) {
+			$file->template('invalid', array('template' => 'foo'));
+		});
 	}
 }
 

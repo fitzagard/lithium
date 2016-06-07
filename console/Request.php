@@ -2,14 +2,14 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
 namespace lithium\console;
 
 /**
- * The `Request` class represents a console request and holds information about it's
+ * The `Request` class represents a console request and holds information about its
  * environment as well as passed arguments.
  *
  * @see lithium\console\Dispatcher
@@ -62,9 +62,12 @@ class Request extends \lithium\core\Object {
 	protected $_autoConfig = array('env' => 'merge');
 
 	/**
-	 * Class Constructor
+	 * Constructor.
 	 *
-	 * @param array $config
+	 * @param array $config Available configuration options are:
+	 *        - `'args'` _array_
+	 *        - `'input'` _resource|null_
+	 * @return void
 	 */
 	public function __construct($config = array()) {
 		$defaults = array('args' => array(), 'input' => null);
@@ -84,7 +87,7 @@ class Request extends \lithium\core\Object {
 	 */
 	protected function _init() {
 		$this->_env += (array) $_SERVER + (array) $_ENV;
-		$this->_env['working'] = getcwd() ?: null;
+		$this->_env['working'] = str_replace('\\', '/', getcwd()) ?: null;
 		$argv = (array) $this->env('argv');
 		$this->_env['script'] = array_shift($argv);
 		$this->_env['PLATFORM'] = 'CLI';
@@ -174,7 +177,7 @@ class Request extends \lithium\core\Object {
 
 	/**
 	 * Sets or returns the current locale string. For more information, see
-	 * "[Globalization](http://lithify.me/docs/manual/07_globalization)" in the manual.
+	 * "[Globalization](http://li3.me/docs/manual/common-tasks/globalization.md)" in the manual.
 	 *
 	 * @param string $locale An optional locale string like `'en'`, `'en_US'` or `'de_DE'`. If
 	 *               specified, will overwrite the existing locale.
@@ -188,7 +191,6 @@ class Request extends \lithium\core\Object {
 	}
 
 	/**
-	 * Return input
 	 * Destructor. Closes input.
 	 *
 	 * @return void

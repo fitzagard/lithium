@@ -2,13 +2,13 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
 namespace lithium\tests\mocks\data\model;
 
-use lithium\tests\mocks\data\model\mock_database\MockResult;
+use lithium\tests\mocks\data\model\database\MockResult;
 
 class MockDatabase extends \lithium\data\source\Database {
 
@@ -91,6 +91,9 @@ class MockDatabase extends \lithium\data\source\Database {
 			$this->logs[] = $sql;
 		}
 		if (isset($this->return['_execute'])) {
+			if (is_callable($this->return['_execute'])) {
+				return $this->return['_execute']($sql);
+			}
 			return $this->return['_execute'];
 		}
 		return new MockResult();

@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -15,8 +15,8 @@ use lithium\g11n\Catalog;
 /**
  * The `Message` class is concerned with an aspect of globalizing static message strings
  * throughout the framework and applications.  When referring to message globalization the
- * phrase of ""translating a message" is widely used. This leads to the assumption that it's
- * a single step process whereas it' a multi step one. A short description of each step is
+ * phrase of "translating a message" is widely used. This leads to the assumption that it's
+ * a single step process whereas it's a multi step one. A short description of each step is
  * given here in order to help understanding the purpose of this class through the context
  * of the process as a whole.
  *
@@ -57,24 +57,24 @@ class Message extends \lithium\core\StaticObject {
 
 	/**
 	 * Translates a message according to the current or provided locale
-	 * and into it's correct plural form.
+	 * and into its correct plural form.
 	 *
 	 * Usage:
-	 * {{{
+	 * ```
 	 * Message::translate('Mind the gap.');
 	 * Message::translate('house', array('count' => 23));
-	 * }}}
+	 * ```
 	 *
 	 * `String::insert()`-style placeholders may be used within the message
 	 * and replacements provided directly within the `options`  argument.
 	 *
 	 * Example:
-	 * {{{
+	 * ```
 	 * Message::translate('I can see {:count} bike.');
 	 * Message::translate('This painting is {:color}.', array(
 	 * 	'color' => Message::translate('silver'),
 	 * ));
-	 * }}}
+	 * ```
 	 *
 	 * @see lithium\util\String::insert()
 	 * @param string $id The id to use when looking up the translation.
@@ -88,6 +88,7 @@ class Message extends \lithium\core\StaticObject {
 	 *                           translation.
 	 *              - `'locale'`: The target locale, defaults to current locale.
 	 *              - `'scope'`: The scope of the message.
+	 *              - `'context'`: The disambiguating context (optional).
 	 *              - `'default'`: Is used as a fall back if `_translated()` returns
 	 *                             without a result.
 	 *              - `'noop'`: If `true` no whatsoever lookup takes place.
@@ -99,6 +100,7 @@ class Message extends \lithium\core\StaticObject {
 			'count' => 1,
 			'locale' => Environment::get('locale'),
 			'scope' => null,
+			'context' => null,
 			'default' => null,
 			'noop' => false
 		);
@@ -108,12 +110,13 @@ class Message extends \lithium\core\StaticObject {
 			$result = null;
 		} else {
 			$result = static::_translated($id, abs($options['count']), $options['locale'], array(
-				'scope' => $options['scope']
+				'scope' => $options['scope'],
+				'context' => $options['context']
 			));
 		}
 
-		if ($result || $options['default']) {
-			return String::insert($result ?: $options['default'], $options);
+		if ($result = $result ?: $options['default']) {
+			return strpos($result, '{:') !== false ? String::insert($result, $options) : $result;
 		}
 	}
 
@@ -123,18 +126,18 @@ class Message extends \lithium\core\StaticObject {
 	 * `Media::_handle()` or be used in other places where needed.
 	 *
 	 * Usage:
-	 * {{{
-	 * 	$t('bike');
-	 * 	$tn('bike', 'bikes', 3);
-	 * }}}
+	 * ```
+	 * $t('bike');
+	 * $tn('bike', 'bikes', 3);
+	 * ```
 	 *
 	 * Using in a method:
-	 * {{{
-	 * 	public function index() {
-	 * 		extract(Message::aliases());
-	 * 		$notice = $t('look');
-	 * 	}
-	 * }}}
+	 * ```
+	 * public function index() {
+	 * 	extract(Message::aliases());
+	 * 	$notice = $t('look');
+	 * }
+	 * ```
 	 *
 	 * @see lithium\net\http\Media::_handle()
 	 * @return array Named aliases (`'t'` and `'tn'`) for translation functions.
@@ -145,7 +148,7 @@ class Message extends \lithium\core\StaticObject {
 		};
 		$tn = function($message1, $message2, $count, array $options = array()) {
 			return Message::translate($message1, $options + compact('count') + array(
-				'default' => $count == 1 ? $message1 : $message2
+				'default' => $count === 1 ? $message1 : $message2
 			));
 		};
 		return compact('t', 'tn');
@@ -180,6 +183,7 @@ class Message extends \lithium\core\StaticObject {
 	 * @param string $locale The target locale.
 	 * @param array $options Passed through to `Catalog::read()`. Valid options are:
 	 *              - `'scope'`: The scope of the message.
+	 *              - `'context'`: The disambiguating context.
 	 * @return string The translation or `null` if none could be found or the plural
 	 *         form could not be determined.
 	 * @filter
@@ -190,6 +194,11 @@ class Message extends \lithium\core\StaticObject {
 		$cache =& static::$_cachedPages;
 		return static::_filter(__FUNCTION__, $params, function($self, $params) use (&$cache) {
 			extract($params);
+
+			if (isset($options['context']) && $options['context'] !== null) {
+				$context = $options['context'];
+				$id = "{$id}|{$context}";
+			}
 
 			if (!isset($cache[$options['scope']][$locale])) {
 				$cache[$options['scope']][$locale] = Catalog::read(

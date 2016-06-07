@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -39,6 +39,17 @@ class RouterTest extends \lithium\test\Unit {
 		);
 		$result = Router::parse(new Request(array(
 			'args' => array('test', 'action', 'param')
+		)));
+		$this->assertEqual($expected, $result);
+	}
+
+	public function testParseZeroArgument() {
+		$expected = array(
+			'command' => 'test', 'action' => 'action',
+			'args' => array('0', '1')
+		);
+		$result = Router::parse(new Request(array(
+			'args' => array('test', 'action', '0', '1')
 		)));
 		$this->assertEqual($expected, $result);
 	}

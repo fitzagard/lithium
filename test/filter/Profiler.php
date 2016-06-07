@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -54,8 +54,6 @@ class Profiler extends \lithium\test\Filter {
 	 */
 	public static function reset() {
 		foreach (static::$_metrics as $name => $check) {
-			$function = current((array) $check['function']);
-
 			if (is_string($check['function']) && !function_exists($check['function'])) {
 				unset(static::$_metrics[$name]);
 			}
@@ -190,7 +188,7 @@ class Profiler extends \lithium\test\Filter {
 	 * @return mixed
 	 */
 	public function check($name, $value = null) {
-		if (is_null($value) && !is_array($name)) {
+		if ($value === null && !is_array($name)) {
 			return isset(static::$_metrics[$name]) ? static::$_metrics[$name] : null;
 		}
 

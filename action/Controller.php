@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2012, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -126,6 +126,20 @@ class Controller extends \lithium\core\Object {
 	 */
 	protected $_autoConfig = array('render' => 'merge', 'classes' => 'merge');
 
+	/**
+	 * Constructor.
+	 *
+	 * @see lithium\action\Controller::$request
+	 * @see lithium\action\Controller::$response
+	 * @see lithium\action\Controller::$_render
+	 * @see lithium\action\Controller::$_classes
+	 * @param array $config Available configuration options are:
+	 *        - `'request'` _object|null_: Either a request object or `null`.
+	 *        - `'response'` _array_: Options for constructing the response object.
+	 *        - `'render'` _array_: Rendering control options.
+	 *        - `'classes'` _array_
+	 * @return void
+	 */
 	public function __construct(array $config = array()) {
 		$defaults = array(
 			'request' => null, 'response' => array(), 'render' => array(), 'classes' => array()
@@ -173,7 +187,9 @@ class Controller extends \lithium\core\Object {
 	 * @param array $dispatchParams The array of parameters that will be passed to the action.
 	 * @param array $options The dispatch options for this action.
 	 * @return object Returns the response object associated with this controller.
-	 * @filter This method can be filtered.
+	 * @filter Filter to execute logic before an action is invoked (i.e. custom access
+	 *         control) or after it has been called and has returned its response (i.e.
+	 *         for caching it).
 	 */
 	public function __invoke($request, $dispatchParams, array $options = array()) {
 		$render =& $this->_render;
@@ -184,7 +200,6 @@ class Controller extends \lithium\core\Object {
 
 			$action = isset($dispatchParams['action']) ? $dispatchParams['action'] : 'index';
 			$args = isset($dispatchParams['args']) ? $dispatchParams['args'] : array();
-			$result = null;
 
 			if (substr($action, 0, 1) === '_' || method_exists(__CLASS__, $action)) {
 				throw new DispatchException('Attempted to invoke a private method.');
@@ -299,7 +314,8 @@ class Controller extends \lithium\core\Object {
 	 *                Because `redirect()` does not exit by default, you should always prefix calls
 	 *                with a `return` statement, so that the action is always immediately exited.
 	 * @return object Returns the instance of the `Response` object associated with this controller.
-	 * @filter This method can be filtered.
+	 * @filter Allows to intercept redirects, either stopping them completely i.e. during debugging
+	 *         or for logging purposes.
 	 */
 	public function redirect($url, array $options = array()) {
 		$router = $this->_classes['router'];

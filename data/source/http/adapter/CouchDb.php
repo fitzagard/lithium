@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2012, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -52,7 +52,11 @@ class CouchDb extends \lithium\data\source\Http {
 	/**
 	 * Constructor.
 	 *
-	 * @param array $config
+	 * @param array $config Available configuration options are:
+	 *        - `'port'` _integer_
+	 *        - `'version'` _integer_
+	 *        - `'database'` _string_
+	 * @return void
 	 */
 	public function __construct(array $config = array()) {
 		$defaults = array('port' => 5984, 'version' => 1, 'database' => null);
@@ -69,8 +73,8 @@ class CouchDb extends \lithium\data\source\Http {
 	}
 
 	/**
-	 * Ensures that the server connection is closed and resources are freed when the adapter
-	 * instance is destroyed.
+	 * Destructor. Ensures that the server connection is closed and resources are freed when
+	 * the adapter instance is destroyed.
 	 *
 	 * @return void
 	 */
@@ -109,7 +113,7 @@ class CouchDb extends \lithium\data\source\Http {
 	 *
 	 * @param string $method
 	 * @param array $params
-	 * @return void
+	 * @return mixed
 	 */
 	public function __call($method, $params = array()) {
 		list($path, $data, $options) = ($params + array('/', array(), array()));
@@ -117,11 +121,13 @@ class CouchDb extends \lithium\data\source\Http {
 	}
 
 	/**
-	 * Custom check to determine if our given magic methods can be responded to.
+	 * Determines if a given method can be called.
 	 *
-	 * @param  string  $method     Method name.
-	 * @param  bool    $internal   Interal call or not.
-	 * @return bool
+	 * @param string $method Name of the method.
+	 * @param boolean $internal Provide `true` to perform check from inside the
+	 *                class/object. When `false` checks also for public visibility;
+	 *                defaults to `false`.
+	 * @return boolean Returns `true` if the method can be called, `false` otherwise.
 	 */
 	public function respondsTo($method, $internal = false) {
 		$parentRespondsTo = parent::respondsTo($method, $internal);
@@ -134,8 +140,7 @@ class CouchDb extends \lithium\data\source\Http {
 	 * @param object $class
 	 * @return void
 	 */
-	public function sources($class = null) {
-	}
+	public function sources($class = null) {}
 
 	/**
 	 * Describe database, create if it does not exist.
@@ -144,7 +149,7 @@ class CouchDb extends \lithium\data\source\Http {
 	 * @param string $entity
 	 * @param array $schema Any schema data pre-defined by the model.
 	 * @param array $meta
-	 * @return void
+	 * @return lithium\data\Schema
 	 */
 	public function describe($entity, $schema = array(), array $meta = array()) {
 		$database = $this->_config['database'];
@@ -243,10 +248,9 @@ class CouchDb extends \lithium\data\source\Http {
 
 		return $this->_filter(__METHOD__, $params, function($self, $params) use (&$conn, $config) {
 			$query = $params['query'];
-			$options = $params['options'];
 			$params = $query->export($self);
-			extract($params, EXTR_OVERWRITE);
-			list($_path, $conditions) = (array) $conditions;
+
+			list($_path, $conditions) = (array) $params['conditions'];
 			$model = $query->model();
 
 			if (empty($_path)) {
@@ -254,7 +258,7 @@ class CouchDb extends \lithium\data\source\Http {
 				$conditions['include_docs'] = 'true';
 			}
 			$path = "{$config['database']}/{$_path}";
-			$args = (array) $conditions + (array) $limit + (array) $order;
+			$args = (array) $conditions + (array) $params['limit'] + (array) $params['order'];
 			$result = $conn->get($path, $args);
 			$result = is_string($result) ? json_decode($result, true) : $result;
 			$data = $stats = array();
@@ -292,8 +296,8 @@ class CouchDb extends \lithium\data\source\Http {
 			$query = $params['query'];
 			$options = $params['options'];
 			$params = $query->export($self);
-			extract($params, EXTR_OVERWRITE);
-			list($_path, $conditions) = (array) $conditions;
+
+			list($_path, $conditions) = (array) $params['conditions'];
 			$data = $query->data();
 
 			foreach (array('id', 'rev') as $key) {

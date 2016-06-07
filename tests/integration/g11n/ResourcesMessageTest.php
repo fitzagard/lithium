@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -43,8 +43,6 @@ class ResourcesMessageTest extends \lithium\test\Integration {
 	 * Germanic family:
 	 * - English (en)
 	 * - German (de)
-	 *
-	 * @return void
 	 */
 	public function testPlurals1() {
 		$locales = array(
@@ -76,8 +74,6 @@ class ResourcesMessageTest extends \lithium\test\Integration {
 	 *
 	 * Romanic family:
 	 * - French (fr)
-	 *
-	 * @return void
 	 */
 	public function testPlurals2() {
 		$locales = array(

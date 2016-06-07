@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -99,8 +99,9 @@ class LoggerTest extends \lithium\test\Unit {
 	}
 
 	public function testWriteWithInvalidPriority() {
-		$this->expectException("Attempted to write log message with invalid priority `foo`.");
-		Logger::foo("Test message");
+		$this->assertException("Attempted to write log message with invalid priority `foo`.", function() {
+			Logger::foo("Test message");
+		});
 	}
 
 	public function testWriteByName() {

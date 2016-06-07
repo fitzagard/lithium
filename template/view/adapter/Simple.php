@@ -2,13 +2,12 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
 namespace lithium\template\view\adapter;
 
-use Closure;
 use Exception;
 use lithium\util\Set;
 use lithium\util\String;
@@ -65,7 +64,7 @@ class Simple extends \lithium\template\view\Renderer {
 	protected function _toString($data) {
 		foreach ($data as $key => $val) {
 			switch (true) {
-				case is_object($val) && !$val instanceof Closure:
+				case is_object($val) && !$val instanceof \Closure:
 					try {
 						$data[$key] = (string) $val;
 					} catch (Exception $e) {

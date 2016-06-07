@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -151,19 +151,18 @@ abstract class Renderer extends \lithium\core\Object {
 	abstract public function render($template, $data = array(), array $options = array());
 
 	/**
-	 * Renderer constructor.
+	 * Constructor.
 	 *
-	 * Accepts these following configuration parameters:
-	 * - `view`: The `View` object associated with this renderer.
-	 * - `strings`: String templates used by helpers.
-	 * - `handlers`: An array of output handlers for string template inputs.
-	 * - `request`: The `Request` object associated with this renderer and passed to the
-	 *              defined handlers.
-	 * - `response`: The `Response` object associated with this renderer.
-	 * - `context`: An array of the current rendering context data, including `content`,
-	 *              `title`, `scripts`, `head` and `styles`.
-	 *
-	 * @param array $config
+	 * @param array $config Available configuration options are:
+	 *        - `view`: The `View` object associated with this renderer.
+	 *        - `strings`: String templates used by helpers.
+	 *        - `handlers`: An array of output handlers for string template inputs.
+	 *        - `request`: The `Request` object associated with this renderer and passed to the
+	 *           defined handlers.
+	 *        - `response`: The `Response` object associated with this renderer.
+	 *        - `context`: An array of the current rendering context data, including `content`,
+	 *           `title`, `scripts`, `head` and `styles`.
+	 * @return void
 	 */
 	public function __construct(array $config = array()) {
 		$defaults = array(
@@ -183,6 +182,22 @@ abstract class Renderer extends \lithium\core\Object {
 	/**
 	 * Sets the default output handlers for string template inputs.
 	 *
+	 * The default handlers available are:
+	 * - `url`: Allows generating escaped and routed URLs using `Router::match()`. Note that
+	 *          all falsey values, which includes an empty array, will result in `'/'` being
+	 *          returned. For empty arrays this behavior is slightly different from using
+	 *          `Router::match()` directly.
+	 * - `path`: Generates an asset path.
+	 * - `options`: Converts a set of parameters to HTML attributes into a string.
+	 * - `title`: Returns the escaped title.
+	 * - `value`: Returns an escaped value.
+	 * - `scripts`: Returns a markup string of styles from context.
+	 * - `styles`: Returns a markup string of scripts from context.
+	 * - `head`
+	 *
+	 * @see lithium\net\http\Router::match()
+	 * @see lithium\net\http\Media::asset()
+	 * @see lithium\template\Helper::_attributes()
 	 * @return void
 	 */
 	protected function _init() {
@@ -300,11 +315,13 @@ abstract class Renderer extends \lithium\core\Object {
 	}
 
 	/**
-	 * Custom check to determine if our given magic methods can be responded to.
+	 * Determines if a given method can be called.
 	 *
-	 * @param  string  $method     Method name.
-	 * @param  bool    $internal   Interal call or not.
-	 * @return bool
+	 * @param string $method Name of the method.
+	 * @param boolean $internal Provide `true` to perform check from inside the
+	 *                class/object. When `false` checks also for public visibility;
+	 *                defaults to `false`.
+	 * @return boolean Returns `true` if the method can be called, `false` otherwise.
 	 */
 	public function respondsTo($method, $internal = false) {
 		return is_callable(array($this, $method), true);
@@ -459,7 +476,7 @@ abstract class Renderer extends \lithium\core\Object {
 	 * Retuns the `View` object that controls this rendering context's instance. This can be used,
 	 * for example, to render view elements, i.e. `<?=$this->view()->render('element' $name); ?>`.
 	 *
-	 * @return void
+	 * @return object
 	 */
 	public function view() {
 		return $this->_view;

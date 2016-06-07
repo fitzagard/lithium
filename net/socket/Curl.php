@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -20,7 +20,7 @@ use lithium\net\http\Message;
  * is not the case, you must either recompile PHP with the proper configuration flags to enable
  * curl, or you may use the `Stream` adapter that is also included with the Lithium core.
  *
- * @link http://www.php.net/manual/en/curl.installation.php
+ * @link http://php.net/curl.installation.php
  * @see lithium\net\socket\Stream
  */
 class Curl extends \lithium\net\Socket {
@@ -30,16 +30,17 @@ class Curl extends \lithium\net\Socket {
 	 * `read` and `write` operations. These options should be set by
 	 * using the `set` method.
 	 *
-	 * @link http://www.php.net/manual/en/function.curl-setopt.php PHP Manual: curl_setopt()
+	 * @link http://php.net/function.curl-setopt.php PHP Manual: curl_setopt()
 	 * @see lithium\net\socket\Curl::set()
 	 * @var array
 	 */
 	public $options = array();
 
 	/**
-	 * Constructor
+	 * Constructor.
 	 *
 	 * @param array $config
+	 * @return void
 	 */
 	public function __construct(array $config = array()) {
 		$defaults = array('ignoreExpect' => true);
@@ -117,7 +118,7 @@ class Curl extends \lithium\net\Socket {
 	 * Reads data from the curl connection.
 	 * The `read` method will utilize the curl options that have been set.
 	 *
-	 * @link http://php.net/manual/en/function.curl-exec.php PHP Manual: curl_exec()
+	 * @link http://php.net/function.curl-exec.php PHP Manual: curl_exec()
 	 * @return mixed Boolean false if the resource handle is unavailable, and the result
 	 *         of `curl_exec` otherwise.
 	 */
@@ -131,7 +132,7 @@ class Curl extends \lithium\net\Socket {
 	/**
 	 * Writes data to curl options
 	 *
-	 * @param object $data a `lithium\net\Message` object or array
+	 * @param array|\lithium\net\Message $data
 	 * @return boolean
 	 */
 	public function write($data = null) {
@@ -153,7 +154,7 @@ class Curl extends \lithium\net\Socket {
 			if (isset($data->method) && $data->method === 'POST') {
 				$this->set(array(CURLOPT_POST => true, CURLOPT_POSTFIELDS => $data->body()));
 			}
-			if (isset($data->method) && in_array($data->method,array('PUT','PATCH'))) {
+			if (isset($data->method) && in_array($data->method,array('PUT','PATCH','DELETE'))) {
 				$this->set(array(
 					CURLOPT_CUSTOMREQUEST => $data->method,
 					CURLOPT_POSTFIELDS => $data->body()
@@ -192,7 +193,7 @@ class Curl extends \lithium\net\Socket {
 	/**
 	 * Sets the options to be used in subsequent curl requests.
 	 *
-	 * @link http://www.php.net/manual/en/curl.constants.php PHP Manual: cURL Constants
+	 * @link http://php.net/curl.constants.php PHP Manual: cURL Constants
 	 * @param array $flags If $values is an array, $flags will be used as the
 	 *        keys to an associative array of curl options. If $values is not set,
 	 *        then $flags will be used as the associative array.

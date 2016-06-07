@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -365,6 +365,79 @@ class AdapterTest extends \lithium\test\Unit {
 					array('file' => 'a.php', 'line' => 2),
 					array('file' => 'b.php', 'line' => 55)
 				)
+			)
+		);
+		$result = $this->adapter->merge($data, $item);
+		$this->assertEqual($expected, $result);
+	}
+
+	public function testMergeWithContexts() {
+		$item = array(
+			'id' => 'test',
+			'ids' => array('singular' => 'a')
+		);
+		$data = $this->adapter->merge(array(), $item);
+
+		$item = array(
+			'id' => 'test',
+			'ids' => array('singular' => 'X', 'plural' => 'b')
+		);
+		$data = $this->adapter->merge($data, $item);
+
+		$item = array(
+			'id' => 'test',
+			'ids' => array('singular' => 'a'),
+			'context' => 'A'
+		);
+		$data = $this->adapter->merge($data, $item);
+
+		$item = array(
+			'id' => 'test',
+			'ids' => array('singular' => 'X', 'plural' => 'b'),
+			'context' => 'A'
+		);
+		$data = $this->adapter->merge($data, $item);
+
+		$item = array(
+			'id' => 'test',
+			'ids' => array('singular' => 'a'),
+			'context' => 'B'
+		);
+		$data = $this->adapter->merge($data, $item);
+
+		$item = array(
+			'id' => 'test',
+			'ids' => array('singular' => 'X', 'plural' => 'b'),
+			'context' => 'B'
+		);
+		$data = $this->adapter->merge($data, $item);
+
+		$expected = array(
+			'test' => array(
+				'id' => 'test',
+				'ids' => array('singular' => 'X', 'plural' => 'b'),
+				'translated' => null,
+				'flags' => array(),
+				'comments' => array(),
+				'occurrences' => array()
+			),
+			'test|A' => array(
+				'id' => 'test',
+				'ids' => array('singular' => 'X', 'plural' => 'b'),
+				'translated' => null,
+				'flags' => array(),
+				'comments' => array(),
+				'occurrences' => array(),
+				'context' => 'A'
+			),
+			'test|B' => array(
+				'id' => 'test',
+				'ids' => array('singular' => 'X', 'plural' => 'b'),
+				'translated' => null,
+				'flags' => array(),
+				'comments' => array(),
+				'occurrences' => array(),
+				'context' => 'B'
 			)
 		);
 		$result = $this->adapter->merge($data, $item);

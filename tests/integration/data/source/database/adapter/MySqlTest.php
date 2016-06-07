@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -92,8 +92,9 @@ class MySqlTest extends \lithium\tests\integration\data\Base {
 			'database' => 'garbage', 'init' => true
 		) + $this->_dbConfig);
 
-		$this->expectException();
-		$this->assertFalse($db->connect());
+		$this->assertException('/.*/', function() use ($db) {
+			$db->connect();
+		});
 		$this->assertFalse($db->isConnected());
 
 		$this->assertTrue($db->disconnect());
@@ -205,8 +206,11 @@ class MySqlTest extends \lithium\tests\integration\data\Base {
 	}
 
 	public function testExecuteException() {
-		$this->expectException();
-		$this->_db->read('SELECT deliberate syntax error');
+		$db = $this->_db;
+
+		$this->assertException('/.*/', function() use ($db) {
+			$db->read('SELECT deliberate syntax error');
+		});
 	}
 
 	public function testEntityQuerying() {
@@ -313,7 +317,7 @@ class MySqlTest extends \lithium\tests\integration\data\Base {
 	}
 
 	/**
-	 * Contrary to other datasources, MySQL only support one TIMESTAMP column by table.
+	 * Contrary to other data sources, MySQL only support one TIMESTAMP column by table.
 	 */
 	public function testDefaultValues() {
 		$this->_db->dropSchema('galleries');

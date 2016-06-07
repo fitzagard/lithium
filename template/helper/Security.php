@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -25,9 +25,11 @@ class Security extends \lithium\template\Helper {
 	protected $_state = array();
 
 	/**
-	 * Configures the helper with the default settings for interacting with security tokens.
+	 * Constructor. Configures the helper with the default settings for interacting with
+	 * security tokens.
 	 *
 	 * @param array $config
+	 * @return void
 	 */
 	public function __construct(array $config = array()) {
 		$defaults = array('sessionKey' => 'security.token', 'salt' => null);
@@ -60,20 +62,27 @@ class Security extends \lithium\template\Helper {
 	 * Binds the `Security` helper to the `Form` helper to create a signature used to secure form
 	 * fields against tampering.
 	 *
-	 * {{{
-	 * // view:
+	 * First `FormSignature` must be provided with a secret unique to your app. This is best
+	 * done in the bootstrap process. The secret key should be a random lengthy string.
+	 * ```php
+	 * use lithium\security\validation\FormSignature;
+	 * FormSignature::config(array('secret' => 'a long secret key'));
+	 * ```
+	 *
+	 * In the view call the `sign()` method before creating the form.
+	 * ```php
 	 * <?php $this->security->sign(); ?>
 	 * <?=$this->form->create(...); ?>
-	 * 	// Form fields...
+	 *     // Form fields...
 	 * <?=$this->form->end(); ?>
-	 * }}}
+	 * ```
 	 *
-	 * {{{
-	 * // controller:
+	 * In the corresponding controller action verify the signature.
+	 * ```php
 	 * if ($this->request->is('post') && !FormSignature::check($this->request)) {
-	 * 	// The key didn't match, meaning the request has been tampered with.
+	 *     // The key didn't match, meaning the request has been tampered with.
 	 * }
-	 * }}}
+	 * ```
 	 *
 	 * Calling this method before a form is created adds two additional options to the `$options`
 	 * parameter in all form inputs:
@@ -122,17 +131,17 @@ class Security extends \lithium\template\Helper {
 		});
 
 		$form->applyFilter('_defaults', function($self, $params, $chain) use ($form, &$state) {
-			$defaults = array('locked' => false, 'exclude' => false);
+			$defaults = array(
+				'locked' => ($params['method'] === 'hidden' && $params['name'] !== '_method'),
+				'exclude' => $params['name'] === '_method'
+			);
 			$options = $params['options'];
 
-			if ($params['method'] === 'hidden' && !isset($options['locked'])) {
-				$options['locked'] = true;
-			}
 			$options += $defaults;
 			$params['options'] = array_diff_key($options, $defaults);
 			$result = $chain->next($self, $params, $chain);
 
-			if (isset($options['exclude']) && $options['exclude']) {
+			if ($params['method'] === 'label') {
 				return $result;
 			}
 			$value = isset($params['options']['value']) ? $params['options']['value'] : "";

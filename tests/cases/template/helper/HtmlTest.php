@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -385,7 +385,7 @@ class HtmlTest extends \lithium\test\Unit {
 		);
 		$this->assertTags($result, $expected);
 
-		$this->assertNulL($this->html->script(array('foo', 'bar'), array('inline' => false)));
+		$this->assertNull($this->html->script(array('foo', 'bar'), array('inline' => false)));
 		$result = $this->context->scripts();
 		$this->assertTags($result, $expected);
 	}

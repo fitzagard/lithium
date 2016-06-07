@@ -2,14 +2,13 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/mit-license.php The MIT License
  */
 
 namespace lithium\util;
 
 use COM;
-use Closure;
 use Exception;
 
 /**
@@ -48,7 +47,7 @@ class String {
 	 * A closure which, given a number of bytes, returns that amount of
 	 * random bytes.
 	 *
-	 * @var Closure
+	 * @var \Closure
 	 */
 	protected static $_source;
 
@@ -76,17 +75,16 @@ class String {
 	 * Generates random bytes for use in UUIDs and password salts, using
 	 * (when available) a cryptographically strong random number generator.
 	 *
-	 * {{{
+	 * ```
 	 * $bits = String::random(8); // 64 bits
 	 * $hex = bin2hex($bits); // [0-9a-f]+
-	 * }}}
+	 * ```
 	 *
-	 * Optionally base64-encodes the resulting random string per the following:
-	 *
-	 *  _The alphabet used by `base64_encode()` is different than the one we should be using. When
-	 * considering the meaty part of the resulting string, however, a bijection allows to go the
-	 * from one to another. Given that we're working on random bytes, we can use safely use
-	 * `base64_encode()` without losing any entropy._
+	 * Optionally base64-encodes the resulting random string per the following. The
+	 * alphabet used by `base64_encode()` is different than the one we should be using.
+	 * When considering the meaty part of the resulting string, however, a bijection
+	 * allows to go the from one to another. Given that we're working on random bytes, we
+	 * can use safely use `base64_encode()` without losing any entropy.
 	 *
 	 * @param integer $bytes The number of random bytes to generate.
 	 * @param array $options The options used when generating random bytes:
@@ -117,8 +115,12 @@ class String {
 	 * If all else fails, a Mersenne Twister gets used. (Strictly
 	 * speaking, this fallback is inadequate, but good enough.)
 	 *
+	 * Note: Users restricting path access through the `open_basedir` INI setting,
+	 * will need to include `/dev/urandom` into the list of allowed paths, as this
+	 * method might read from `/dev/urandom`.
+	 *
 	 * @see lithium\util\String::$_source
-	 * @return Closure Returns a closure containing a random number generator.
+	 * @return \Closure Returns a closure containing a random number generator.
 	 */
 	protected static function _source() {
 		switch (true) {
@@ -152,9 +154,9 @@ class String {
 	 * Uses PHP's hashing functions to create a hash of the string provided, using the options
 	 * specified. The default hash algorithm is SHA-512.
 	 *
-	 * @link http://php.net/manual/en/function.hash.php PHP Manual: `hash()`
-	 * @link http://php.net/manual/en/function.hash-hmac.php PHP Manual: `hash_hmac()`
-	 * @link http://php.net/manual/en/function.hash-algos.php PHP Manual: `hash_algos()`
+	 * @link http://php.net/function.hash.php PHP Manual: `hash()`
+	 * @link http://php.net/function.hash-hmac.php PHP Manual: `hash_hmac()`
+	 * @link http://php.net/function.hash-algos.php PHP Manual: `hash_algos()`
 	 * @param string $string The string to hash.
 	 * @param array $options Supported options:
 	 *        - `'type'` _string_: Any valid hashing algorithm. See the `hash_algos()` function to
@@ -188,21 +190,37 @@ class String {
 	/**
 	 * Compares two strings in constant time to prevent timing attacks.
 	 *
+	 * To successfully mitigate timing attacks and not leak the actual length of the known
+	 * string, it is important that _both provided strings have the same length_ and that
+	 * the _user-supplied string is passed as a second parameter_ rather than first.
+	 *
+	 * This function has the same signature and behavior as the native `hash_equals()` function
+	 * and will use that function if available (PHP >= 5.6).
+	 *
+	 * An E_USER_WARNING will be emitted when either of the supplied parameters is not a string.
+	 *
+	 * @link http://php.net/hash_equals
 	 * @link http://codahale.com/a-lesson-in-timing-attacks/ More about timing attacks.
-	 * @param string $left The left side of the comparison.
-	 * @param string $right The right side of the comparison.
+	 * @param string $known The string of known length to compare against.
+	 * @param string $user The user-supplied string.
 	 * @return boolean Returns a boolean indicating whether the two strings are equal.
 	 */
-	public static function compare($left, $right) {
-		$result = true;
-
-		if (($length = strlen($left)) !== strlen($right)) {
+	public static function compare($known, $user) {
+		if (function_exists('hash_equals')) {
+			return hash_equals($known, $user);
+		}
+		if (!is_string($known) || !is_string($user)) {
+			trigger_error('Expected `$known` & `$user` parameters to be strings.', E_USER_WARNING);
 			return false;
 		}
-		for ($i = 0; $i < $length; $i++) {
-			$result = $result && ($left[$i] === $right[$i]);
+
+		if (($length = strlen($known)) !== strlen($user)) {
+			return false;
 		}
-		return $result;
+		for ($i = 0, $result = 0; $i < $length; $i++) {
+			$result |= ord($known[$i]) ^ ord($user[$i]);
+		}
+		return $result === 0;
 	}
 
 	/**
@@ -210,12 +228,16 @@ class String {
 	 * in the `$data` array corresponds to a variable placeholder name in `$str`.
 	 *
 	 * Usage:
-	 * {{{
+	 * ```
 	 * String::insert(
 	 *     'My name is {:name} and I am {:age} years old.',
 	 *     array('name' => 'Bob', 'age' => '65')
 	 * ); // returns 'My name is Bob and I am 65 years old.'
-	 * }}}
+	 * ```
+	 *
+	 * Please note that optimization have applied to this method and parts of the code
+	 * may look like it can refactored or removed but in fact this is part of the applied
+	 * optimization. Please check the history for this section of code before refactoring
 	 *
 	 * @param string $str A string containing variable place-holders.
 	 * @param array $data A key, value array where each key stands for a place-holder variable
@@ -232,7 +254,6 @@ class String {
 	 *          (defaults to `'/(?<!\\)\:%s/'`. Please note that this option takes precedence over
 	 *          all other options except `'clean'`.
 	 * @return string
-	 * @todo Optimize this
 	 */
 	public static function insert($str, array $data, array $options = array()) {
 		$defaults = array(
@@ -244,7 +265,6 @@ class String {
 		);
 		$options += $defaults;
 		$format = $options['format'];
-		reset($data);
 
 		if ($format === 'regex' || (!$format && $options['escape'])) {
 			$format = sprintf(
@@ -259,14 +279,12 @@ class String {
 			$replace = array();
 
 			foreach ($data as $key => $value) {
-				$value = (is_array($value) || $value instanceof Closure) ? '' : $value;
-
-				try {
+				if (!is_scalar($value)) {
 					if (is_object($value) && method_exists($value, '__toString')) {
 						$value = (string) $value;
+					} else {
+						$value = '';
 					}
-				} catch (Exception $e) {
-					$value = '';
 				}
 				$replace["{$options['before']}{$key}{$options['after']}"] = $value;
 			}
@@ -276,6 +294,7 @@ class String {
 
 		if (strpos($str, '?') !== false && isset($data[0])) {
 			$offset = 0;
+
 			while (($pos = strpos($str, '?', $offset)) !== false) {
 				$val = array_shift($data);
 				$offset = $pos + strlen($val);
@@ -285,14 +304,13 @@ class String {
 		}
 
 		foreach ($data as $key => $value) {
-			$hashVal = crc32($key);
-			$key = sprintf($format, preg_quote($key, '/'));
-
-			if (!$key) {
+			if (!$key = sprintf($format, preg_quote($key, '/'))) {
 				continue;
 			}
-			$str = preg_replace($key, $hashVal, $str);
-			$str = str_replace($hashVal, $value, $str);
+			$hash = crc32($key);
+
+			$str = preg_replace($key, $hash, $str);
+			$str = str_replace($hash, $value, $str);
 		}
 
 		if (!isset($options['format']) && isset($options['before'])) {
@@ -312,39 +330,27 @@ class String {
 	 *        - `'andText'`: (defaults to `true`).
 	 *        - `'before'`: characters marking the start of targeted substring.
 	 *        - `'clean'`: `true` or an array of clean options:
-	 *        - `'gap'`: Regular expression matching gaps.
-	 *        - `'method'`: Either `'text'` or `'html'` (defaults to `'text'`).
-	 *        - `'replacement'`: String to use for cleaned substrings (defaults to `''`).
-	 *        - `'word'`: Regular expression matching words.
+	 *          - `'gap'`: Regular expression matching gaps.
+	 *          - `'method'`: Either `'text'` or `'html'` (defaults to `'text'`).
+	 *          - `'replacement'`: String to use for cleaned substrings (defaults to `''`).
+	 *          - `'word'`: Regular expression matching words.
 	 * @return string The cleaned string.
 	 */
 	public static function clean($str, array $options = array()) {
-		if (!$options['clean']) {
-			return $str;
+		if (is_array($options['clean'])) {
+			$clean = $options['clean'];
+		} else {
+			$clean = array(
+				'method' => is_bool($options['clean']) ? 'text' : $options['clean']
+			);
 		}
-		$clean = $options['clean'];
-		$clean = ($clean === true) ? array('method' => 'text') : $clean;
-		$clean = (!is_array($clean)) ? array('method' => $options['clean']) : $clean;
 
 		switch ($clean['method']) {
-			case 'html':
-				$clean += array('word' => '[\w,.]+', 'andText' => true, 'replacement' => '');
-				$kleenex = sprintf(
-					'/[\s]*[a-z]+=(")(%s%s%s[\s]*)+\\1/i',
-					preg_quote($options['before'], '/'),
-					$clean['word'],
-					preg_quote($options['after'], '/')
-				);
-				$str = preg_replace($kleenex, $clean['replacement'], $str);
-
-				if ($clean['andText']) {
-					$options['clean'] = array('method' => 'text');
-					$str = static::clean($str, $options);
-				}
-			break;
 			case 'text':
 				$clean += array(
-					'word' => '[\w,.]+', 'gap' => '[\s]*(?:(?:and|or|,)[\s]*)?', 'replacement' => ''
+					'word' => '[\w,.]+',
+					'gap' => '[\s]*(?:(?:and|or|,)[\s]*)?',
+					'replacement' => ''
 				);
 				$before = preg_quote($options['before'], '/');
 				$after = preg_quote($options['after'], '/');
@@ -356,6 +362,26 @@ class String {
 					$clean['gap'], $before, $clean['word'], $after, $clean['gap']
 				);
 				$str = preg_replace($kleenex, $clean['replacement'], $str);
+			break;
+			case 'html':
+				$clean += array(
+					'word' => '[\w,.]+',
+					'andText' => true,
+					'replacement' => ''
+				);
+				$kleenex = sprintf(
+					'/[\s]*[a-z]+=(")(%s%s%s[\s]*)+\\1/i',
+					preg_quote($options['before'], '/'),
+					$clean['word'],
+					preg_quote($options['after'], '/')
+				);
+				$str = preg_replace($kleenex, $clean['replacement'], $str);
+
+				if ($clean['andText']) {
+					return static::clean($str, array(
+						'clean' => array('method' => 'text')
+					) + $options);
+				}
 			break;
 		}
 		return $str;
@@ -389,8 +415,7 @@ class String {
 	 * @return array Returns an array of tokens.
 	 */
 	public static function tokenize($data, array $options = array()) {
-		$defaults = array('separator' => ',', 'leftBound' => '(', 'rightBound' => ')');
-		extract($options + $defaults);
+		$options += array('separator' => ',', 'leftBound' => '(', 'rightBound' => ')');
 
 		if (!$data || is_array($data)) {
 			return $data;
@@ -406,9 +431,9 @@ class String {
 		while ($offset <= $length) {
 			$tmpOffset = -1;
 			$offsets = array(
-				strpos($data, $separator, $offset),
-				strpos($data, $leftBound, $offset),
-				strpos($data, $rightBound, $offset)
+				strpos($data, $options['separator'], $offset),
+				strpos($data, $options['leftBound'], $offset),
+				strpos($data, $options['rightBound'], $offset)
 			);
 
 			for ($i = 0; $i < 3; $i++) {
@@ -424,25 +449,25 @@ class String {
 			}
 			$buffer .= substr($data, $offset, ($tmpOffset - $offset));
 
-			if ($data[$tmpOffset] === $separator && $depth === 0) {
+			if ($data[$tmpOffset] === $options['separator'] && $depth === 0) {
 				$results[] = $buffer;
 				$buffer = '';
 			} else {
 				$buffer .= $data{$tmpOffset};
 			}
 
-			if ($leftBound !== $rightBound) {
-				if ($data[$tmpOffset] === $leftBound) {
+			if ($options['leftBound'] !== $options['rightBound']) {
+				if ($data[$tmpOffset] === $options['leftBound']) {
 					$depth++;
 				}
-				if ($data[$tmpOffset] === $rightBound) {
+				if ($data[$tmpOffset] === $options['rightBound']) {
 					$depth--;
 				}
 				$offset = ++$tmpOffset;
 				continue;
 			}
 
-			if ($data[$tmpOffset] === $leftBound) {
+			if ($data[$tmpOffset] === $options['leftBound']) {
 				($open) ? $depth-- : $depth++;
 				$open = !$open;
 			}

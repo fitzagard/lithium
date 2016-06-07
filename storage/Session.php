@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -86,7 +86,7 @@ class Session extends \lithium\core\Adaptable {
 	 *              - `'strategies'` _boolean_: Indicates whether or not a configuration's applied
 	 *                strategy classes should be enabled for this operation. Defaults to `true`.
 	 * @return mixed Read result on successful session read, `null` otherwise.
-	 * @filter This method may be filtered.
+	 * @filter
 	 */
 	public static function read($key = null, array $options = array()) {
 		$defaults = array('name' => null, 'strategies' => true);
@@ -125,7 +125,7 @@ class Session extends \lithium\core\Adaptable {
 	 *              - `'strategies'` _boolean_: Indicates whether or not a configuration's applied
 	 *                strategy classes should be enabled for this operation. Defaults to `true`.
 	 * @return boolean Returns `true` on successful write, `false` otherwise.
-	 * @filter This method may be filtered.
+	 * @filter
 	 */
 	public static function write($key, $value = null, array $options = array()) {
 		$defaults = array('name' => null, 'strategies' => true);
@@ -173,7 +173,7 @@ class Session extends \lithium\core\Adaptable {
 	 *              - `'strategies'` _boolean_: Indicates whether or not a configuration's applied
 	 *                strategy classes should be enabled for this operation. Defaults to `true`.
 	 * @return boolean Returns `true` on successful delete, or `false` on failure.
-	 * @filter This method may be filtered.
+	 * @filter
 	 */
 	public static function delete($key, array $options = array()) {
 		$defaults = array('name' => null, 'strategies' => true);
@@ -254,7 +254,7 @@ class Session extends \lithium\core\Adaptable {
 	 * @param string $key The session key to check.
 	 * @param array $options Optional parameters that this method accepts.
 	 * @return boolean
-	 * @filter This method may be filtered.
+	 * @filter
 	 */
 	public static function check($key, array $options = array()) {
 		$defaults = array('name' => null, 'strategies' => true);

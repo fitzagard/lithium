@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -17,10 +17,10 @@ use lithium\console\command\Help;
  * The `run` method is automatically called if it exists. Otherwise, if a method does not exist
  * the `Help` command will be run.
  *
- * {{{
- * $ li3 example
- * $ li3 example --format=json
- * }}}
+ * ```sh
+ * li3 example
+ * li3 example --format=json
+ * ```
  *
  */
 class Command extends \lithium\core\Object {
@@ -82,7 +82,10 @@ class Command extends \lithium\core\Object {
 	/**
 	 * Constructor.
 	 *
-	 * @param array $config
+	 * @param array $config Available configuration options are:
+	 *        - `'request'` _object|null_
+	 *        - `'response'` _array_
+	 *        - `'classes'` _array_
 	 * @return void
 	 */
 	public function __construct(array $config = array()) {
@@ -126,11 +129,10 @@ class Command extends \lithium\core\Object {
 	 * @see lithium\console\Response
 	 * @param string $action The name of the method to run.
 	 * @param array $args The arguments from the request.
-	 * @param array $options
 	 * @return object The response object associated with this command.
 	 * @todo Implement filters.
 	 */
-	public function __invoke($action, $args = array(), $options = array()) {
+	public function __invoke($action, $args = array()) {
 		try {
 			$this->response->status = 1;
 			$result = $this->invokeMethod($action, $args);
@@ -167,13 +169,13 @@ class Command extends \lithium\core\Object {
 	/**
 	 * Writes a string to the output stream.
 	 *
-	 * @param string $output The string to write.
-	 * @param integer|string|array $options
-	 *        integer as the number of new lines.
-	 *        string as the style
-	 *        array as :
-	 *        - nl : number of new lines to add at the end
-	 *        - style : the style name to wrap around the
+	 * @param string|array $output The string or an array of strings to write.
+	 * @param mixed $options When passed an integer or boolean it is used as the number of
+	 *                       of new lines, when passed a string it is interpreted as style
+	 *                       to use otherwise when an array following options are available:
+	 *                       - `'nl'` _integer|boolean_: number of new lines to add at the
+	 *                          end. `false` to disable adding a newline.
+	 *                       - `'style'` _string_: the style name to wrap around the output.
 	 * @return integer
 	 */
 	public function out($output = null, $options = array('nl' => 1)) {
@@ -186,13 +188,13 @@ class Command extends \lithium\core\Object {
 	/**
 	 * Writes a string to error stream.
 	 *
-	 * @param string $error The string to write.
-	 * @param integer|string|array $options
-	 *        integer as the number of new lines.
-	 *        string as the style
-	 *        array as :
-	 *        - nl : number of new lines to add at the end
-	 *        - style : the style name to wrap around the
+	 * @param string|array $error The string or an array of strings to write.
+	 * @param mixed $options When passed an integer or boolean it is used as the number of
+	 *                       of new lines, when passed a string it is interpreted as style
+	 *                       to use otherwise when an array following options are available:
+	 *                       - `'nl'` _integer|boolean_: number of new lines to add at the
+	 *                          end. `false` to disable adding a newline.
+	 *                       - `'style'` _string_: the style name to wrap around the output.
 	 * @return integer
 	 */
 	public function error($error = null, $options = array('nl' => 1)) {
@@ -205,8 +207,8 @@ class Command extends \lithium\core\Object {
 	 *
 	 * @param string $prompt
 	 * @param array $options
-	 * @return string Returns the result of the input data. If the input is equal to the `quit`
-	 *          option boolean `false` is returned
+	 * @return string|boolean Returns the result of the input data. If the input is
+	 *         equal to the `quit` option boolean `false` is returned.
 	 */
 	public function in($prompt = null, array $options = array()) {
 		$defaults = array('choices' => null, 'default' => null, 'quit' => 'q');
@@ -219,7 +221,7 @@ class Command extends \lithium\core\Object {
 		$default = $options['default'] ? "[{$options['default']}] " : '';
 
 		do {
-			$this->out("{$prompt} {$choices} \n {$default}> ", false);
+			$this->out("{$prompt} {$choices} \n {$default}> ", 0);
 			$result = trim($this->request->input());
 		} while (
 			!empty($options['choices']) &&
@@ -246,11 +248,11 @@ class Command extends \lithium\core\Object {
 	 *
 	 * Given the text `'Lithium'` this generates following output:
 	 *
-	 * {{{
+	 * ```
 	 * -------
 	 * Lithium
 	 * -------
-	 * }}}
+	 * ```
 	 *
 	 * @param string $text The heading text.
 	 * @param integer $line The length of the line. Defaults to the length of text.
@@ -274,7 +276,7 @@ class Command extends \lithium\core\Object {
 	 *
 	 * Example Usage:
 	 *
-	 * {{{
+	 * ```
 	 * $output = array(
 	 *     array('Name', 'Age'),
 	 *     array('----', '---'),
@@ -283,16 +285,16 @@ class Command extends \lithium\core\Object {
 	 *     $output[] = array($user->name, $user->age);
 	 * }
 	 * $this->columns($output);
-	 * }}}
+	 * ```
 	 *
 	 * Would render something similar to:
 	 *
-	 * {{{
+	 * ```
 	 * Name       Age
 	 * ----       ---
 	 * Jane Doe   22
 	 * Foo Bar    18
-	 * }}}
+	 * ```
 	 *
 	 * This method also calculates the needed space between the columns. All option params given
 	 * also get passed down to the `out()` method, which allow custom formatting. Passing something
@@ -365,7 +367,7 @@ class Command extends \lithium\core\Object {
 	 * Stop execution, by exiting the script.
 	 *
 	 * @param integer $status Numeric value that will be used on `exit()`.
-	 * @param boolean $message An optional message that will be written to the stream.
+	 * @param string|null $message An optional message that will be written to the stream.
 	 * @return void
 	 */
 	public function stop($status = 0, $message = null) {
@@ -378,21 +380,23 @@ class Command extends \lithium\core\Object {
 	/**
 	 * Handles the response that is sent to the stream.
 	 *
-	 * @param string $type the stream either output or error
-	 * @param string $string the message to render
-	 * @param integer|string|array $options
-	 *        integer as the number of new lines.
-	 *        string as the style
-	 *        array as :
-	 *        - nl : number of new lines to add at the end
-	 *        - style : the style name to wrap around the
+	 * @param string $type The stream either output or error.
+	 * @param string|array $string The message to render.
+	 * @param mixed $options When passed an integer or boolean it is used as the number of
+	 *                       of new lines, when passed a string it is interpreted as style
+	 *                       to use otherwise when an array following options are available:
+	 *                       - `'nl'` _integer|boolean_: number of new lines to add at the
+	 *                          end. `false` to disable adding a newline.
+	 *                       - `'style'` _string_: the style name to wrap around the output.
 	 * @return void
 	 */
 	protected function _response($type, $string, $options) {
 		$defaults = array('nl' => 1, 'style' => null);
 
 		if (!is_array($options)) {
-			if (!$options || is_int($options)) {
+			if (is_bool($options)) {
+				$options = array('nl' => (integer) $options);
+			} elseif (is_int($options)) {
 				$options = array('nl' => $options);
 			} elseif (is_string($options)) {
 				$options = array('style' => $options);
@@ -409,13 +413,11 @@ class Command extends \lithium\core\Object {
 			}
 			return;
 		}
-		extract($options);
-
-		if ($style !== null && !$this->plain) {
-			$string = "{:{$style}}{$string}{:end}";
+		if ($options['style'] !== null && !$this->plain) {
+			$string = "{:{$options['style']}}{$string}{:end}";
 		}
-		if ($nl) {
-			$string = $string . $this->nl($nl);
+		if ($options['nl']) {
+			$string = $string . $this->nl((integer) $options['nl']);
 		}
 		return $this->response->{$type}($string);
 	}

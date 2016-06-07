@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -15,6 +15,7 @@ use lithium\tests\fixture\model\gallery\Images;
 use lithium\tests\fixture\model\gallery\Galleries;
 use lithium\util\String;
 use li3_fixtures\test\Fixtures;
+use lithium\data\Schema;
 
 class DatabaseTest extends \lithium\tests\integration\data\Base {
 
@@ -31,7 +32,7 @@ class DatabaseTest extends \lithium\tests\integration\data\Base {
 	public function skip() {
 		parent::connect($this->_connection);
 		if (!class_exists('li3_fixtures\test\Fixtures')) {
-			$this->skipIf(true, "These tests need `'li3_fixtures'` to be runned.");
+			$this->skipIf(true, 'Need `li3_fixtures` to run tests.');
 		}
 		$this->skipIf(!$this->with(array('MySql', 'PostgreSql', 'Sqlite3')));
 		$this->_export = Libraries::path('lithium\tests\fixture\model\gallery\export', array(
@@ -48,15 +49,22 @@ class DatabaseTest extends \lithium\tests\integration\data\Base {
 				'adapter' => 'Connection',
 				'connection' => $this->_connection,
 				'fixtures' => $this->_fixtures
+			),
+			'db_alternative' => array(
+				'adapter' => 'Connection',
+				'connection' => $this->_connection . '_alternative',
+				'fixtures' => $this->_fixtures
 			)
 		);
 
 		if ($this->with('PostgreSql')) {
-			$options['db']['alters']['change']['id'] = array(
-				'value' => function ($id) {
-					return (object) 'default';
-				}
-			);
+			foreach ($options as $key => &$value) {
+				$value['alters']['change']['id'] = array(
+					'value' => function ($id) {
+						return (object) 'default';
+					}
+				);
+			}
 		}
 
 		Fixtures::config($options);
@@ -78,8 +86,10 @@ class DatabaseTest extends \lithium\tests\integration\data\Base {
 		$config['object'] = null;
 		$connection = 'no_database';
 		Connections::add($connection, $config);
-		$this->expectException("/No Database configured/");
-		Connections::get($connection)->connect();
+
+		$this->assertException("/No Database configured/", function() use ($connection) {
+			Connections::get($connection)->connect();
+		});
 	}
 
 	public function testConnectWithWrongHost() {
@@ -89,8 +99,10 @@ class DatabaseTest extends \lithium\tests\integration\data\Base {
 		$config['object'] = null;
 		$connection = 'wrong_host';
 		Connections::add($connection, $config);
-		$this->expectException();
-		Connections::get($connection)->connect();
+
+		$this->assertException('/.*/', function() use ($connection) {
+			Connections::get($connection)->connect();
+		});
 	}
 
 	public function testConnectWithWrongPassword() {
@@ -101,13 +113,18 @@ class DatabaseTest extends \lithium\tests\integration\data\Base {
 		$config['object'] = null;
 		$connection = 'wrong_passord';
 		Connections::add($connection, $config);
-		$this->expectException();
-		Connections::get($connection)->connect();
+
+		$this->assertException('/.*/', function() use ($connection) {
+			Connections::get($connection)->connect();
+		});
 	}
 
 	public function testExecuteException() {
-		$this->expectException("/error/");
-		$this->_db->read('SELECT * FROM * FROM table');
+		$db = $this->_db;
+
+		$this->assertException("/error/", function() use ($db) {
+			$db->read('SELECT * FROM * FROM table');
+		});
 	}
 
 	public function testCreateData() {
@@ -157,8 +174,9 @@ class DatabaseTest extends \lithium\tests\integration\data\Base {
 		));
 		$galleries = $this->_db->read($query)->data();
 		$expected = include $this->_export . '/testOneToMany.php';
-
 		$gallery = Galleries::find('first', $opts + array('with' => 'Images'))->data();
+
+		$this->assertEqual(3, count($gallery['images']));
 		$this->assertEqual(reset($expected), $gallery);
 	}
 
@@ -229,6 +247,46 @@ class DatabaseTest extends \lithium\tests\integration\data\Base {
 		}
 	}
 
+	public function testOrderWithRelationAndLimit() {
+		$galleries = Galleries::first(array(
+			'with' => array('Images'),
+			'order' => 'name',
+		));
+		$this->assertNotEmpty($galleries);
+	}
+
+	public function testOrderWithHasManyThrowsExceptionIfNonSequential() {
+		$this->assertException('/^Associated records hydrated out of order.*/', function() {
+			Galleries::find('all', array(
+				'order' => array('Images.title' => 'DESC'),
+				'with' => 'Images'
+			))->to('array');
+		});
+	}
+
+	public function testOrderWithHasManyWorksIfOrderByMainIdFirst() {
+		$expected = include $this->_export . '/testHasManyWithOrder.php';
+
+		$galleries = Galleries::find('all', array(
+			'order' => array('id', 'Images.title' => 'DESC'),
+			'with' => 'Images'
+		));
+
+		$this->assertCount(2, $galleries);
+		$this->assertEqual($expected, $galleries->to('array'));
+
+		$galleries = Galleries::find('all', array(
+			'order' => array(
+				'name' => 'DESC',
+				'Images.title' => 'DESC'
+			),
+			'with' => 'Images'
+		));
+
+		$this->assertCount(2, $galleries);
+		$this->assertEqual(array_reverse($expected, true), $galleries->to('array'));
+	}
+
 	public function testGroup() {
 		$field = $this->_db->name('Images.id');
 		$galleries = Galleries::find('all', array(
@@ -250,6 +308,180 @@ class DatabaseTest extends \lithium\tests\integration\data\Base {
 	public function testRemove() {
 		$this->assertTrue(Galleries::remove());
 		$this->assertTrue(Images::remove());
+	}
+
+	/**
+	 * Prove that one model's connection can be switched while
+	 * keeping on working upon the correct databases.
+	 */
+	public function testSwitchingDatabaseOnModel() {
+		$connection1 = $this->_connection;
+		$connection2 = $this->_connection . '_alternative';
+
+		$connectionConfig1 = Connections::get($connection1, array('config' => true));
+		$connectionConfig2 = Connections::get($connection2, array('config' => true));
+
+		parent::connect($connection2);
+		$this->skipIf(!$connectionConfig2, "The `'{$connection2}' connection is not available`.");
+		$this->skipIf(!$this->with(array('MySql', 'PostgreSql', 'Sqlite3')));
+
+		$bothInMemory = $connectionConfig1['database'] == ':memory:';
+		$bothInMemory = $bothInMemory && $connectionConfig2['database'] == ':memory:';
+		$this->skipIf($bothInMemory, 'Cannot use two connections with in memory databases');
+
+		Galleries::config(array('meta' => array('connection' => $connection1)));
+
+		$galleriesCountOriginal = Galleries::find('count');
+
+		$gallery = Galleries::create(array('name' => 'record_in_db'));
+		$gallery->save();
+
+		Fixtures::save('db_alternative');
+
+		Galleries::config(array('meta' => array('connection' => $connection2)));
+
+		$expected = $galleriesCountOriginal;
+		$result = Galleries::find('count');
+		$this->assertEqual($expected, $result);
+
+		Galleries::config(array('meta' => array('connection' => $connection1)));
+
+		$expected = $galleriesCountOriginal + 1;
+		$result = Galleries::find('count');
+		$this->assertEqual($expected, $result);
+
+		Fixtures::clear('db_alternative');
+	}
+
+	/**
+	 * Prove that two distinct models each having a different connection to a different
+	 * database are working independently upon the correct databases.
+	 */
+	public function testSwitchingDatabaseDistinctModels() {
+		$connection1 = $this->_connection;
+		$connection2 = $this->_connection . '_alternative';
+
+		$connectionConfig1 = Connections::get($connection1, array('config' => true));
+		$connectionConfig2 = Connections::get($connection2, array('config' => true));
+
+		parent::connect($connection2);
+		$this->skipIf(!$connectionConfig2, "The `'{$connection2}' connection is not available`.");
+		$this->skipIf(!$this->with(array('MySql', 'PostgreSql', 'Sqlite3')));
+
+		$bothInMemory = $connectionConfig1['database'] == ':memory:';
+		$bothInMemory = $bothInMemory && $connectionConfig2['database'] == ':memory:';
+		$this->skipIf($bothInMemory, 'Cannot use two connections with in memory databases');
+
+		Fixtures::save('db_alternative');
+
+		Galleries::config(array('meta' => array('connection' => $connection1)));
+		Images::config(array('meta' => array('connection' => $connection1)));
+
+		$galleriesCountOriginal = Galleries::find('count');
+		$imagesCountOriginal = Images::find('count');
+
+		$gallery = Galleries::create(array('name' => 'record_in_db'));
+		$gallery->save();
+
+		$image = Images::find('first', array('conditions' => array('id' => 1)));
+		$image->delete();
+
+		Galleries::config(array('meta' => array('connection' => $connection2)));
+
+		$expected = $galleriesCountOriginal;
+		$result = Galleries::find('count');
+		$this->assertEqual($expected, $result);
+
+		$expected = $imagesCountOriginal - 1;
+		$result = Images::find('count');
+		$this->assertEqual($expected, $result);
+
+		Fixtures::clear('db_alternative');
+	}
+
+	/**
+	 * Tests if the `value()` and `_cast()` methods work correctly
+	 * when a schema is hardcoded.
+	 *
+	 * @link https://github.com/UnionOfRAD/lithium/issues/1003
+	 */
+	public function testValueWithHardcodedSchema() {
+		Galleries::config(array(
+			'schema' => new Schema(array(
+				'fields' => array(
+					'id' => array('type' => 'id'),
+					'name' => array('type' => 'string', 'length' => 50),
+					'active' => array('type' => 'boolean', 'default' => true),
+					'created' => array('type' => 'datetime'),
+					'modified' => array('type' => 'datetime')
+				)
+			))
+		));
+		$results = Galleries::find('all', array(
+			'conditions' => array(
+				'name' => 'Foo Gallery'
+			),
+			'order' => array('id' => 'DESC')
+		));
+		$this->assertEqual(1, $results->count());
+	}
+
+	/**
+	 * Tests if DISTINCT queries work as expected and do not
+	 * duplicate records.
+	 *
+	 * @link https://github.com/UnionOfRAD/lithium/issues/1175
+	 */
+	public function testDistinctResultsInNoDuplicates() {
+		Galleries::create(array('name' => 'A'))->save();
+		Galleries::create(array('name' => 'B'))->save();
+		Galleries::create(array('name' => 'C'))->save();
+		Galleries::create(array('name' => 'D'))->save();
+		Galleries::create(array('name' => 'A'))->save();
+		Galleries::create(array('name' => 'A'))->save();
+		Galleries::create(array('name' => 'A'))->save();
+		Galleries::create(array('name' => 'B'))->save();
+		Galleries::create(array('name' => 'C'))->save();
+		Galleries::create(array('name' => 'D'))->save();
+
+		$results = Galleries::find('all', array(
+			'fields' => array(
+				'DISTINCT name as d__name'
+			)
+		));
+		$names = array();
+		foreach ($results as $result) {
+			$this->assertNotContains($result->d__name, $names);
+			$names[] = $result->d__name;
+		}
+
+		$results = Galleries::find('all', array(
+			'fields' => array(
+				'DISTINCT id AS d__id',
+				'name'
+			)
+		));
+		$ids = array();
+		foreach ($results as $result) {
+			$this->assertNotContains($result->d__id, $ids);
+			$ids[] = $result->d__id;
+		}
+	}
+
+	/**
+	 * Tests that even when using a subquery the correct
+	 * number of records is returned.
+	 *
+	 * @link https://github.com/UnionOfRAD/lithium/issues/1209
+	 */
+	public function testSubqueryWithMultipleRecords() {
+		$results = Galleries::find('all', array(
+			'fields' => array(
+				'name',
+				'(SELECT 23) AS number'
+			)
+		));
+		$this->assertEqual(2, $results->count());
 	}
 }
 

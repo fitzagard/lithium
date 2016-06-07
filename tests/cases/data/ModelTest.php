@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -28,8 +28,6 @@ use lithium\tests\mocks\data\MockSource;
 use lithium\tests\mocks\data\model\MockDatabase;
 
 class ModelTest extends \lithium\test\Unit {
-
-	protected $_model = 'lithium\tests\mocks\data\MockModelCompositePk';
 
 	protected $_altSchema = null;
 
@@ -227,7 +225,7 @@ class ModelTest extends \lithium\test\Unit {
 
 		$this->assertArrayHasKey('MockCreator', MockSubProduct::relations());
 
-		$this->assertCount(3, MockSubProduct::finders());
+		$this->assertCount(4, MockSubProduct::finders());
 
 		$this->assertCount(1, MockSubProduct::initializers());
 
@@ -281,7 +279,6 @@ class ModelTest extends \lithium\test\Unit {
 	 * types, and individual relationships.
 	 *
 	 * @todo Some tests will need to change when full relationship support is built out.
-	 * @return void
 	 */
 	public function testRelationshipIntrospection() {
 		$result = array_keys(MockPost::relations());
@@ -374,14 +371,13 @@ class ModelTest extends \lithium\test\Unit {
 		$this->assertEqual(array('foo' => 13), $result['query']->conditions());
 		$this->assertEqual(array('created_at' => 'desc'), $result['query']->order());
 
-		$this->expectException('/Method `findFoo` not defined or handled in class/');
-		MockPost::findFoo();
+		$this->assertException('/Method `findFoo` not defined or handled in class/', function() {
+			MockPost::findFoo();
+		});
 	}
 
 	/**
 	 * Tests the find 'first' filter on a simple record set.
-	 *
-	 * @return void
 	 */
 	public function testSimpleFindFirst() {
 		$result = MockComment::first();
@@ -462,7 +458,7 @@ class ModelTest extends \lithium\test\Unit {
 
 		$this->assertNull(MockPost::key(array()));
 
-		$model = $this->_model;
+		$model = 'lithium\tests\mocks\data\MockModelCompositePk';
 		$this->assertNull($model::key(array('client_id' => 3)));
 
 		$result = $model::key(array('invoice_id' => 5, 'payment' => '100'));
@@ -489,6 +485,25 @@ class ModelTest extends \lithium\test\Unit {
 			'title' => array('please enter a title'),
 			'email' => array('email is empty', 'email is not valid')
 		);
+		$result = $post->errors();
+		$this->assertEqual($expected, $result);
+	}
+
+	public function testValidatesWithWhitelist() {
+		$post = MockPostForValidates::create();
+
+		$whitelist = array('title');
+		$post->title = 'title';
+		$result = $post->validates(compact('whitelist'));
+		$this->assertTrue($result);
+
+		$post->title = '';
+		$result = $post->validates(compact('whitelist'));
+		$this->assertFalse($result);
+		$result = $post->errors();
+		$this->assertNotEmpty($result);
+
+		$expected = array('title' => array('please enter a title'));
 		$result = $post->errors();
 		$this->assertEqual($expected, $result);
 	}
@@ -665,7 +680,7 @@ class ModelTest extends \lithium\test\Unit {
 		$result = $post->errors();
 		$this->assertNotEmpty($result);
 
-		$post->email = 'contact@lithify.me';
+		$post->email = 'contact@li3.me';
 		$result = $post->validates();
 		$this->assertTrue($result);
 		$result = $post->errors();
@@ -837,6 +852,91 @@ class ModelTest extends \lithium\test\Unit {
 		$this->assertEqual($expected, $result);
 	}
 
+	public function testSaveWithValidationAndWhitelist() {
+		$post = MockPostForValidates::create();
+
+		$whitelist = array('title');
+		$post->title = 'title';
+		$result = $post->save(null, compact('whitelist'));
+		$this->assertTrue($result);
+
+		$post->title = '';
+		$result = $post->save(null, compact('whitelist'));
+		$this->assertFalse($result);
+		$result = $post->errors();
+		$this->assertNotEmpty($result);
+
+		$expected = array('title' => array('please enter a title'));
+		$result = $post->errors();
+		$this->assertEqual($expected, $result);
+	}
+
+	public function testWhitelistWhenLockedUsingCreateForData() {
+		MockPost::config(array(
+			'schema' => $this->_altSchema,
+			'meta' => array(
+				'locked' => true,
+				'connection' => 'mocksource'
+			)
+		));
+
+		$data = array('title' => 'New post', 'foo' => 'bar');
+		$record = MockPost::create($data);
+
+		$expected = array('title' => 'New post');
+		$result = $record->save();
+		$this->assertEqual($expected, $result['query']->data());
+
+		$data = array('foo' => 'bar');
+		$record = MockPost::create($data);
+
+		$expected = array();
+		$result = $record->save();
+		$this->assertEqual($expected, $result['query']->data());
+	}
+
+	public function testWhitelistWhenLockedUsingSaveForData() {
+		MockPost::config(array(
+			'schema' => $this->_altSchema,
+			'meta' => array(
+				'locked' => true,
+				'connection' => 'mocksource'
+			)
+		));
+
+		$data = array('title' => 'New post', 'foo' => 'bar');
+		$record = MockPost::create();
+
+		$expected = array('title' => 'New post');
+		$result = $record->save($data);
+		$this->assertEqual($expected, $result['query']->data());
+
+		$data = array('foo' => 'bar');
+		$record = MockPost::create();
+
+		$expected = array();
+		$result = $record->save($data);
+		$this->assertEqual($expected, $result['query']->data());
+	}
+
+	public function testWhitelistWhenLockedUsingCreateWithValidAndSaveForInvalidData() {
+		MockPost::config(array(
+			'schema' => $this->_altSchema,
+			'meta' => array(
+				'locked' => true,
+				'connection' => 'mocksource'
+			)
+		));
+
+		$data = array('title' => 'New post');
+		$record = MockPost::create($data);
+
+		$expected = array('title' => 'New post');
+		$data = array('foo' => 'bar');
+		$result = $record->save($data);
+		$this->assertEqual($expected, $result['query']->data());
+	}
+
 	public function testImplicitKeyFind() {
 		$result = MockPost::find(10);
 		$this->assertEqual('read', $result['query']->type());
@@ -896,8 +996,6 @@ class ModelTest extends \lithium\test\Unit {
 	/**
 	 * Tests that varying `count` syntaxes all produce the same query operation (i.e.
 	 * `Model::count(...)`, `Model::find('count', ...)` etc).
-	 *
-	 * @return void
 	 */
 	public function testCountSyntax() {
 		$base = MockPost::count(array('email' => 'foo@example.com'));
@@ -948,8 +1046,9 @@ class ModelTest extends \lithium\test\Unit {
 		MockPost::config();
 		MockPost::invokeMethod('_initialize', array('lithium\tests\mocks\data\MockPost'));
 		$exception = 'Related model class \'lithium\tests\mocks\data\Unexisting\' not found.';
-		$this->expectException($exception);
-		MockPost::relations('Unexisting');
+		$this->assertException($exception, function() {
+			MockPost::relations('Unexisting');
+		});
 	}
 
 	public function testLazyMetadataInit() {
@@ -1058,6 +1157,53 @@ class ModelTest extends \lithium\test\Unit {
 		$this->assertEqual('MockTag', MockPost::relations('mock_tags')->name());
 		$this->assertEqual('MockPost', MockComment::relations('mock_post')->name());
 		$this->assertNull(MockPost::relations('undefined'));
+	}
+
+	public function testValidateWithRequiredFalse(){
+		$post = MockPost::create(array(
+			'title' => 'post title',
+		));
+		$post->validates(array('rules' => array(
+			'title' => 'A custom message here for empty titles.',
+			'email' => array(
+				array('notEmpty', 'message' => 'email is empty.', 'required' => false)
+			)
+		)));
+		$this->assertEmpty($post->errors());
+	}
+
+	public function testValidateWithRequiredTrue(){
+		$post = MockPost::create(array(
+			'title' => 'post title',
+		));
+		$post->sync(1);
+		$post->validates(array('rules' => array(
+			'title' => 'A custom message here for empty titles.',
+			'email' => array(
+				array('notEmpty', 'message' => 'email is empty.', 'required' => true)
+			)
+		)));
+		$this->assertNotEmpty($post->errors());
+	}
+
+	public function testValidateWithRequiredNull(){
+		$validates = array(
+			'title' => 'A custom message here for empty titles.',
+			'email' => array(
+				array('notEmpty', 'message' => 'email is empty.', 'required' => null)
+			)
+		);
+
+		$post = MockPost::create(array(
+			'title' => 'post title',
+		));
+
+		$post->validates(array('rules' => $validates));
+		$this->assertNotEmpty($post->errors());
+
+		$post->sync(1);
+		$post->validates(array('rules' => $validates));
+		$this->assertEmpty($post->errors());
 	}
 }
 

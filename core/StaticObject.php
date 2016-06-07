@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -11,7 +11,6 @@ namespace lithium\core;
 use lithium\core\Libraries;
 use lithium\util\collection\Filters;
 use lithium\analysis\Inspector;
-use Closure;
 
 /**
  * Provides a base class for all static classes in the Lithium framework. Similar to its
@@ -44,7 +43,7 @@ class StaticObject {
 	 * @param mixed $method The name of the method to apply the closure to. Can either be a single
 	 *        method name as a string, or an array of method names. Can also be false to remove
 	 *        all filters on the current object.
-	 * @param Closure $filter The closure that is used to filter the method(s), can also be false
+	 * @param \Closure $filter The closure that is used to filter the method(s), can also be false
 	 *        to remove all the current filters for the given method.
 	 * @return void
 	 */
@@ -93,11 +92,13 @@ class StaticObject {
 	}
 
 	/**
-	 * Will determine if a method can be called.
+	 * Determines if a given method can be called.
 	 *
-	 * @param  string  $method     Method name.
-	 * @param  bool    $internal   Interal call or not.
-	 * @return bool
+	 * @param string $method Name of the method.
+	 * @param boolean $internal Provide `true` to perform check from inside the
+	 *                class/object. When `false` checks also for public visibility;
+	 *                defaults to `false`.
+	 * @return boolean Returns `true` if the method can be called, `false` otherwise.
 	 */
 	public static function respondsTo($method, $internal = false) {
 		return Inspector::isCallable(get_called_class(), $method, $internal);
@@ -124,11 +125,10 @@ class StaticObject {
 	 * callback, and iteratively wrapping the filters around it.
 	 *
 	 * @see lithium\util\collection\Filters
-	 * @param string|array $method The name of the method being executed, or an array containing
-	 *        the name of the class that defined the method, and the method name.
+	 * @param string $method The name of the method being executed.
 	 * @param array $params An associative array containing all the parameters passed into
 	 *        the method.
-	 * @param Closure $callback The method's implementation, wrapped in a closure.
+	 * @param \Closure $callback The method's implementation, wrapped in a closure.
 	 * @param array $filters Additional filters to apply to the method for this call only.
 	 * @return mixed
 	 */

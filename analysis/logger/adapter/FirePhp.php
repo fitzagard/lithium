@@ -2,22 +2,22 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2012, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
 namespace lithium\analysis\logger\adapter;
 
 /**
- * The `FirePhp` log adapter allows you to log messages to [ FirePHP](http://www.firephp.org/).
+ * The `FirePhp` log adapter allows you to log messages to FirePHP.
  *
  * This allows you to inspect native PHP values and objects inside the FireBug console.
  *
  * Because this adapter interacts directly with the `Response` object, some additional code is
- * required to use it. The simplest way to achieve this is to add a filter to the `Dispatcher`. For
- * example, the following can be placed in a bootstrap file:
+ * required to use it. The simplest way to achieve this is to add a filter to the `Dispatcher`.
+ * For example, the following can be placed in a bootstrap file:
  *
- * {{{
+ * ```
  * use lithium\action\Dispatcher;
  * use lithium\analysis\Logger;
  *
@@ -31,7 +31,7 @@ namespace lithium\analysis\logger\adapter;
  * 	}
  * 	return $chain->next($self, $params, $chain);
  * });
- * }}}
+ * ```
  *
  * This will cause the message and other debug settings added to the header of the
  * response, where FirePHP is able to locate and print it accordingly. As this adapter
@@ -40,7 +40,7 @@ namespace lithium\analysis\logger\adapter;
  *
  * Now, in you can use the logger in your application code (like controllers, views and models).
  *
- * {{{
+ * ```
  * class PagesController extends \lithium\action\Controller {
  * 	public function view() {
  * 		//...
@@ -48,7 +48,7 @@ namespace lithium\analysis\logger\adapter;
  * 		//...
  * 	}
  * }
- * }}}
+ * ```
  *
  * Because this adapter also has a queue implemented, it is possible to log messages even when the
  * `Response` object is not yet generated. When it gets generated (and bound), all queued messages
@@ -59,16 +59,16 @@ namespace lithium\analysis\logger\adapter;
  * every message that is passed will be encoded via `json_encode()`, so check out this built-in
  * method for more information on how your message will be encoded.
  *
- * {{{
+ * ```
  * Logger::debug(array('debug' => 'me'));
  * Logger::debug(new \lithium\action\Response());
- * }}}
+ * ```
  *
  * @see lithium\action\Response
  * @see lithium\net\http\Message::headers()
  * @link http://www.firephp.org/ FirePHP
  * @link http://www.firephp.org/Wiki/Reference/Protocol FirePHP Protocol Reference
- * @link http://php.net/manual/en/function.json-encode.php PHP Manual: `json_encode()`
+ * @link http://php.net/function.json-encode.php PHP Manual: `json_encode()`
  */
 class FirePhp extends \lithium\core\Object {
 
@@ -161,7 +161,7 @@ class FirePhp extends \lithium\core\Object {
 	 *
 	 * @see lithium\analysis\logger\adapter\FirePhp::_format()
 	 * @param array $message A message containing the key and the content to store.
-	 * @return void
+	 * @return array|void The queued message when no `Response` object was bound.
 	 */
 	protected function _write($message) {
 		if (!$this->_response) {

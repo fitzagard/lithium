@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -151,7 +151,7 @@ class Html extends \lithium\template\Helper {
 			return $this->_metaLink($type, $url, $options);
 		}
 
-		$url = is_null($url) ? $title : $url;
+		$url = $url === null ? $title : $url;
 		return $this->_render(__METHOD__, 'link', compact('title', 'url', 'options'), $scope);
 	}
 
@@ -160,7 +160,7 @@ class Html extends \lithium\template\Helper {
 	 * `'/'`, the path will be relative to the base path of your application.  Otherwise, the path
 	 * will be relative to your JavaScript path, usually `webroot/js`.
 	 *
-	 * @link http://lithify.me/docs/manual/handling-http-requests/views.wiki
+	 * @link http://li3.me/docs/manual/handling-http-requests/views.wiki
 	 * @param mixed $path String The name of a JavaScript file, or an array of names.
 	 * @param array $options Available options are:
 	 *              - `'inline'` _boolean_: Whether or not the `<script />` element should be output
@@ -170,7 +170,7 @@ class Html extends \lithium\template\Helper {
 	 *              you'd like to place them in the `<head />` along with your other scripts.
 	 *              - any other options specified are rendered as HTML attributes of the element.
 	 * @return string
-	 * @filter This method can be filtered.
+	 * @filter
 	 */
 	public function script($path, array $options = array()) {
 		$defaults = array('inline' => true);
@@ -208,14 +208,13 @@ class Html extends \lithium\template\Helper {
 	 *              inline. When set to `false`, the `styles()` handler prints out the styles,
 	 *              and other specified styles to be included in the layout. Defaults to `true`.
 	 *              This is useful when page-specific styles are created inline in the page, and
-	 *              you'd like to place them in
-	 *              the `<head />` along with your other styles.
+	 *              you'd like to place them in the `<head />` along with your other styles.
 	 *              - `'type'` _string_: By default, accepts `stylesheet` or `import`, which
 	 *              respectively correspond to `style-link` and `style-import` strings templates
 	 *              defined in `Html::$_strings`.
 	 *              - any other options specified are rendered as HTML attributes of the element.
 	 * @return string CSS <link /> or <style /> tag, depending on the type of link.
-	 * @filter This method can be filtered.
+	 * @filter
 	 */
 	public function style($path, array $options = array()) {
 		$defaults = array('type' => 'stylesheet', 'inline' => true);
@@ -255,7 +254,7 @@ class Html extends \lithium\template\Helper {
 	 * @param string $tag the name of a key in `$_strings`
 	 * @param array $options the options required by `$_strings[$tag]`
 	 * @return mixed a string if successful, otherwise `null`
-	 * @filter This method can be filtered.
+	 * @filter
 	 */
 	public function head($tag, array $options) {
 		if (!isset($this->_strings[$tag])) {
@@ -282,7 +281,7 @@ class Html extends \lithium\template\Helper {
 	 *               as an external url used as the `src` attribute.
 	 * @param array $options Array of HTML attributes.
 	 * @return string Returns a formatted `<img />` tag.
-	 * @filter This method can be filtered.
+	 * @filter
 	 */
 	public function image($path, array $options = array()) {
 		$defaults = array('alt' => '');

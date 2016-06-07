@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -439,21 +439,19 @@ class QueryTest extends \lithium\test\Unit {
 			'type' => 'read',
 			'with' => 'MockQueryComment',
 			'limit' => 3,
-			'order' => 'author_id ASC',
+			'order' => array('author_id', 'id'),
 			'group' => 'author_id'
 		));
 		$expected = 'SELECT * FROM {foo} AS {MockQueryPost} LEFT JOIN {mock_query_comments} AS ';
 		$expected .= '{MockQueryComment} ON {MockQueryPost}.{id} = {MockQueryComment}';
 		$expected .= '.{mock_query_post_id} GROUP BY {MockQueryPost}.{author_id} ORDER BY ';
-		$expected .= '{MockQueryPost}.{author_id} ASC LIMIT 3;';
+		$expected .= '{MockQueryPost}.{author_id} ASC, {MockQueryPost}.{id} ASC LIMIT 3;';
 		$this->assertEqual($expected, $this->_db->renderCommand($query));
 	}
 
 	/**
 	 * Tests that assigning a whitelist to a query properly restricts the list of data fields that
 	 * the query exposes.
-	 *
-	 * @return void
 	 */
 	public function testWhitelisting() {
 		$data = array('foo' => 1, 'bar' => 2, 'baz' => 3);
@@ -462,12 +460,14 @@ class QueryTest extends \lithium\test\Unit {
 
 		$query = new Query(compact('data') + array('whitelist' => array('foo', 'bar')));
 		$this->assertEqual(array('foo' => 1, 'bar' => 2), $query->data());
+
+		$data = array('baz' => 3);
+		$query = new Query(compact('data') + array('whitelist' => array('foo', 'bar')));
+		$this->assertIdentical(array(), $query->data());
 	}
 
 	/**
 	 * Tests basic property accessors and mutators.
-	 *
-	 * @return void
 	 */
 	public function testBasicAssignments() {
 		$query = new Query();
@@ -515,8 +515,9 @@ class QueryTest extends \lithium\test\Unit {
 		$entity = new Record(array('model' => $this->_model, 'exists' => true));
 		$entity->_id = 13;
 		$query = new Query(compact('entity'));
-		$this->expectException('/No matching primary key found/');
-		$query->conditions();
+		$this->assertException('/No matching primary key found/', function() use ($query) {
+			$query->conditions();
+		});
 	}
 
 	public function testAutomaticAliasing() {
@@ -761,8 +762,11 @@ class QueryTest extends \lithium\test\Unit {
 			'with' => array('Image.ImageTag.Tag', 'Image', 'Image.ImageTag'),
 			'strategy' => 'custom'
 		));
-		$this->expectException('Undefined query strategy `custom`.');
-		$export = $query->export($this->_db);
+		$db = $this->_db;
+
+		$this->assertException('Undefined query strategy `custom`.', function() use ($query, $db) {
+			$query->export($db);
+		});
 	}
 
 	public function testRespondsTo() {

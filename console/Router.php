@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -21,7 +21,7 @@ class Router extends \lithium\core\Object {
 	 * XF68-style long options (i.e. `-foo`) are not supported but support
 	 * can be added by extending this class.
 	 *
-	 * @param object $request lithium\console\Request
+	 * @param \lithium\console\Request $request
 	 * @return array $params
 	 */
 	public static function parse($request = null) {
@@ -31,7 +31,8 @@ class Router extends \lithium\core\Object {
 		if (!empty($request->argv)) {
 			$args = $request->argv;
 
-			while ($arg = array_shift($args)) {
+			while ($args) {
+				$arg = array_shift($args);
 				if (preg_match('/^-(?P<key>[a-zA-Z0-9])$/i', $arg, $match)) {
 					$params[$match['key']] = true;
 					continue;

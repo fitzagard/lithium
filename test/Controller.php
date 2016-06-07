@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -31,7 +31,7 @@ class Controller extends \lithium\core\Object {
 	 * Magic method to make Controller callable.
 	 *
 	 * @see lithium\action\Dispatcher::_callable()
-	 * @param object $request A \lithium\action\Request object.
+	 * @param \lithium\action\Request $request
 	 * @param array $dispatchParams Array of params after being parsed by router.
 	 * @param array $options Some basic options for this controller.
 	 * @return string

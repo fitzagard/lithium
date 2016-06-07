@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -23,17 +23,16 @@ class Base extends \lithium\test\Integration {
 		$this->_dbConfig = Connections::get($connection, array('config' => true));
 		$db = $this->_db = Connections::get($connection);
 
-		$this->skipIf(!$db, "The `'{$connection}' connection is not correctly configured`.");
+		$this->skipIf(!$db, "The `{$connection}` connection is not correctly configured.");
 		$this->skipIf(!$db::enabled(), 'Extension is not loaded.');
 
-		$this->skipIf(!$db->isConnected($options), "No {$connection} connection available.");
+		$this->skipIf(!$db->isConnected($options), "No `{$connection}` connection available.");
 	}
 
 	public function with($adapters) {
-		$adapters = (array) $adapters;
-		$type = $this->_dbConfig['adapter'];
-		$type = $type ?: $this->_dbConfig['type'];
-		foreach ($adapters as $adapter) {
+		$type = $this->_dbConfig['adapter'] ?: $this->_dbConfig['type'];
+
+		foreach ((array) $adapters as $adapter) {
 			if ($type === $adapter) {
 				return true;
 			}

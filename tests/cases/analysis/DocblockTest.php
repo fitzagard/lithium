@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -63,6 +63,7 @@ class DocblockTest extends \lithium\test\Unit {
 	 * That contains
 	 * multiple lines
 	 *
+	 * @deprecated
 	 * @important This is a tag that spans a single line.
 	 * @discuss This is a tag that
 	 *          spans
@@ -82,7 +83,7 @@ class DocblockTest extends \lithium\test\Unit {
 		$this->assertEqual($expected, $result['text']);
 
 		$tags = $result['tags'];
-		$expected = array('important', 'discuss', 'link', 'see', 'return');
+		$expected = array('deprecated', 'important', 'discuss', 'link', 'see', 'return');
 		$this->assertEqual($expected, array_keys($tags));
 
 		$result = "This is a tag that\n         spans\n         several\n         lines.";

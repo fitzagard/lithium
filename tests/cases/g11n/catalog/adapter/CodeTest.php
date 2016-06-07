@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -32,6 +32,14 @@ $t('simple 1');
 $t('options 1', null, array('locale' => 'en'));
 
 $t('replace 1 {:a}', array('a' => 'b'));
+
+$t('simple context', array('context' => 'foo'));
+$t('simple context', array('context' => 'bar'));
+
+$t('replace context 1 {:a}', array('a' => 'b', 'context' => 'foo'));
+$t('replace context 1 {:a}', array('a' => 'b', 'context' => 'bar'));
+$t('replace context 2 {:a}', array('context' => 'foo', 'a' => 'b'));
+$t('replace context 2 {:a}', array('context' => 'bar', 'a' => 'b'));
 
 $t($test['invalid']);
 $t(32203);
@@ -121,6 +129,39 @@ EOD;
 
 		$expected = array('singular' => 'replace 1 {:a}');
 		$result = $results['replace 1 {:a}']['ids'];
+		$this->assertEqual($expected, $result);
+	}
+
+	public function testReadMessageTemplateTContext() {
+		$results = $this->adapter->read('messageTemplate', 'root', null);
+
+		$this->assertArrayHasKey('simple context|foo', $results);
+		$this->assertArrayHasKey('simple context|bar', $results);
+
+		$this->assertArrayHasKey('replace context 1 {:a}|foo', $results);
+		$this->assertArrayHasKey('replace context 1 {:a}|bar', $results);
+
+		$this->assertArrayHasKey('replace context 2 {:a}|foo', $results);
+		$this->assertArrayHasKey('replace context 2 {:a}|bar', $results);
+
+		$expected = array('ids' => array('singular' => 'simple context'), 'context' => 'foo');
+		$key = 'simple context|foo';
+		$result = array('ids' => $results[$key]['ids'],	'context' => 'foo');
+		$this->assertEqual($expected, $result);
+
+		$expected = array('ids' => array('singular' => 'simple context'), 'context' => 'bar');
+		$key = 'simple context|bar';
+		$result = array('ids' => $results[$key]['ids'],	'context' => 'bar');
+		$this->assertEqual($expected, $result);
+
+		$expected = array('ids' => array('singular' => 'replace context 1 {:a}'), 'context' => 'foo');
+		$key = 'replace context 1 {:a}|foo';
+		$result = array('ids' => $results[$key]['ids'],	'context' => 'foo');
+		$this->assertEqual($expected, $result);
+
+		$expected = array('ids' => array('singular' => 'replace context 1 {:a}'), 'context' => 'bar');
+		$key = 'replace context 1 {:a}|bar';
+		$result = array('ids' => $results[$key]['ids'],	'context' => 'bar');
 		$this->assertEqual($expected, $result);
 	}
 

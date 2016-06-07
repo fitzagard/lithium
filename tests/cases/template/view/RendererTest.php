@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -198,8 +198,10 @@ class RendererTest extends \lithium\test\Unit {
 		$helper = $this->subject->helper('html');
 		$this->assertInstanceOf('lithium\template\Helper', $helper);
 
-		$this->expectException('/invalidFoo/');
-		$this->assertNull($this->subject->helper('invalidFoo'));
+		$subject = $this->subject;
+		$this->assertException('/invalidFoo/', function() use ($subject) {
+			$subject->helper('invalidFoo');
+		});
 	}
 
 	public function testHelperQuerying() {
@@ -261,6 +263,10 @@ class RendererTest extends \lithium\test\Unit {
 
 		$absolute = $this->subject->url('Posts::foo', array('absolute' => true));
 		$this->assertEqual('http://foo.local/posts/foo', $absolute);
+
+		$this->assertEqual('/', $this->subject->url(array()));
+		$this->assertEqual('/', $this->subject->url(''));
+		$this->assertEqual('/', $this->subject->url(null));
 
 		$this->assertEmpty(trim($this->subject->scripts()));
 		$this->assertEqual('foobar', trim($this->subject->scripts('foobar')));

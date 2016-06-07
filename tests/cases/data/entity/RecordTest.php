@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -40,8 +40,6 @@ class RecordTest extends \lithium\test\Unit {
 
 	/**
 	 * Tests that a record's fields are accessible as object properties.
-	 *
-	 * @return void
 	 */
 	public function testDataPropertyAccess() {
 		$data = array('title' => 'Test record', 'body' => 'Some test record data');
@@ -59,8 +57,6 @@ class RecordTest extends \lithium\test\Unit {
 
 	/**
 	 * Tests that a record can be exported to a given series of formats.
-	 *
-	 * @return void
 	 */
 	public function testRecordFormatExport() {
 		$data = array('foo' => 'bar');
@@ -125,8 +121,10 @@ class RecordTest extends \lithium\test\Unit {
 		$this->assertEqual('create', $result['query']->type());
 		$this->assertEqual(array('title' => 'foo'), $result['query']->data());
 
-		$this->expectException("Unhandled method call `invalid`.");
-		$this->assertNull($this->_record->invalid());
+		$record = $this->_record;
+		$this->assertException("Unhandled method call `invalid`.", function() use ($record) {
+			$record->invalid();
+		});
 	}
 }
 

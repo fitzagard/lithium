@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -15,7 +15,7 @@ namespace lithium\util;
  * Collection objects can act very much like arrays. This is especially evident in creating new
  * objects, or by converting Collection into an actual array:
  *
- * {{{
+ * ```
  * $coll = new Collection();
  * $coll[] = 'foo';
  * // $coll[0] --> 'foo'
@@ -24,12 +24,10 @@ namespace lithium\util;
  * // $coll[0] --> 'foo'
  *
  * $array = $coll->to('array');
- * }}}
+ * ```
  *
  * Apart from array-like data access, Collections allow for filtering and iteration methods:
- *
- * {{{
- *
+ * ```
  * $coll = new Collection(array('data' => array(0, 1, 2, 3, 4)));
  *
  * $coll->first();   // 0
@@ -39,7 +37,7 @@ namespace lithium\util;
  * $coll->next();    // 3
  * $coll->prev();    // 2
  * $coll->rewind();  // 0
- * }}}
+ * ```
  *
  * The primary purpose of the `Collection` class is to enable simple, efficient access to groups
  * of similar objects, and to perform operations against these objects using anonymous functions.
@@ -49,7 +47,8 @@ namespace lithium\util;
  * one or more.
  *
  * The `Collection` class also supports dispatching methods against a set of objects, if the method
- * is supported by all objects. For example: {{{
+ * is supported by all objects. For example:
+ * ```
  * class Task {
  * 	public function run($when) {
  * 		// Do some work
@@ -69,11 +68,11 @@ namespace lithium\util;
  *
  * // Alternatively, the method can be called natively, with the same result:
  * $result = $tasks->run('now');
- * }}}
+ * ```
  *
- * @link http://us.php.net/manual/en/class.arrayaccess.php PHP Manual: ArrayAccess Interface
- * @link http://us.php.net/manual/en/class.iterator.php PHP Manual: Iterator Interface
- * @link http://us.php.net/manual/en/class.countable.php PHP Manual: Countable Interface
+ * @link http://php.net/class.arrayaccess.php PHP Manual: ArrayAccess Interface
+ * @link http://php.net/class.iterator.php PHP Manual: Iterator Interface
+ * @link http://php.net/class.countable.php PHP Manual: Countable Interface
  */
 class Collection extends \lithium\core\Object implements \ArrayAccess, \Iterator, \Countable {
 
@@ -110,14 +109,14 @@ class Collection extends \lithium\core\Object implements \ArrayAccess, \Iterator
 	 * This can be accomplished in two ways. First, format handlers may be registered on a
 	 * case-by-case basis, as in the following:
 	 *
-	 * {{{
+	 * ```
 	 * Collection::formats('json', function($collection, $options) {
 	 * 	return json_encode($collection->to('array'));
 	 * });
 	 *
 	 * // You can also implement the above as a static class method, and register it as follows:
 	 * Collection::formats('json', '\my\custom\Formatter::toJson');
-	 * }}}
+	 * ```
 	 *
 	 * Alternatively, you can implement a class that can handle several formats. This class must
 	 * implement two static methods:
@@ -127,9 +126,9 @@ class Collection extends \lithium\core\Object implements \ArrayAccess, \Iterator
 	 * - A `to()` method, which handles the actual conversion.
 	 *
 	 * Once a class implements these methods, it may be registered per the following:
-	 * {{{
+	 * ```
 	 * Collection::formats('\lithium\net\http\Media');
-	 * }}}
+	 * ```
 	 *
 	 * For reference on how to implement these methods, see the `Media` class.
 	 *
@@ -152,7 +151,7 @@ class Collection extends \lithium\core\Object implements \ArrayAccess, \Iterator
 		if ($format === false) {
 			return static::$_formats = array('array' => 'lithium\util\Collection::toArray');
 		}
-		if ((is_null($handler)) && class_exists($format)) {
+		if ($handler === null && class_exists($format)) {
 			return static::$_formats[] = $format;
 		}
 		return static::$_formats[$format] = $handler;
@@ -209,11 +208,13 @@ class Collection extends \lithium\core\Object implements \ArrayAccess, \Iterator
 	}
 
 	/**
-	 * Custom check to determine if our given magic methods can be responded to.
+	 * Determines if a given method can be called.
 	 *
-	 * @param  string  $method     Method name.
-	 * @param  bool    $internal   Interal call or not.
-	 * @return bool
+	 * @param string $method Name of the method.
+	 * @param boolean $internal Provide `true` to perform check from inside the
+	 *                class/object. When `false` checks also for public visibility;
+	 *                defaults to `false`.
+	 * @return boolean Returns `true` if the method can be called, `false` otherwise.
 	 */
 	public function respondsTo($method, $internal = false) {
 		$magicMethod = count($this->_data) > 0 && $this->_data[0]->respondsTo($method, $internal);
@@ -226,11 +227,12 @@ class Collection extends \lithium\core\Object implements \ArrayAccess, \Iterator
 	 * property `Collection::$_formats`. The `Collection` class comes with built-in support for
 	 * array conversion, but other formats may be registered.
 	 *
-	 * Once the appropriate handlers are registered, a `Collection` instance can be converted into
-	 * any handler-supported format, i.e.: {{{
+	 * Once the appropriate handlers are registered, a `Collection` instance can be
+	 * converted into any handler-supported format, i.e.:
+	 * ```
 	 * $collection->to('json'); // returns a JSON string
 	 * $collection->to('xml'); // returns an XML string
-	 * }}}
+	 * ```
 	 *
 	 *  _Please note that Lithium does not ship with a default XML handler, but one can be
 	 * configured easily._
@@ -286,7 +288,7 @@ class Collection extends \lithium\core\Object implements \ArrayAccess, \Iterator
 	 * @param callback $filter Callback to use for filtering.
 	 * @param array $options The available options are:
 	 *        - `'collect'`: If `true`, the results will be returned wrapped in a new
-	 *          `Collection` object or subclass.
+	 *          `Collection` object or subclass. Defaults to `true`.
 	 * @return mixed The filtered items. Will be an array unless `'collect'` is defined in the
 	 *         `$options` argument, then an instance of this class will be returned.
 	 */
@@ -328,8 +330,9 @@ class Collection extends \lithium\core\Object implements \ArrayAccess, \Iterator
 	/**
 	 * Applies a callback to all items in the collection.
 	 *
+	 * @link http://php.net/array_map
 	 * @param callback $filter The filter to apply.
-	 * @return object This collection instance.
+	 * @return Collection This collection instance.
 	 */
 	public function each($filter) {
 		$this->_data = array_map($filter, $this->_data);
@@ -340,6 +343,7 @@ class Collection extends \lithium\core\Object implements \ArrayAccess, \Iterator
 	 * Applies a callback to a copy of all data in the collection
 	 * and returns the result.
 	 *
+	 * @link http://php.net/array_map
 	 * @param callback $filter The filter to apply.
 	 * @param array $options The available options are:
 	 *        - `'collect'`: If `true`, the results will be returned wrapped
@@ -362,22 +366,27 @@ class Collection extends \lithium\core\Object implements \ArrayAccess, \Iterator
 	/**
 	 * Reduce, or fold, a collection down to a single value
 	 *
-	 * @param callback $filter The filter to apply.
-	 * @param mixed $initial Initial value
-	 * @return mixed A single reduced value
+	 * @link http://php.net/array_reduce
+	 * @param callback $reducer The reduce function, i.e. `function($carry, $item) { return ... }`
+	 * @param mixed $initial Initial value passed to the reduce function as `$carry`,
+	 *        defaults to `false`.
+	 * @return mixed A single reduced value.
 	 */
-	public function reduce($filter, $initial = false) {
-		return array_reduce($this->_data, $filter, $initial);
+	public function reduce($reducer, $initial = false) {
+		return array_reduce($this->_data, $reducer, $initial);
 	}
 
 	/**
 	 * Sorts the objects in the collection.
 	 *
-	 * @param callable $sorter The sorter for the data, can either be a sort function like
-	 *        natsort or a compare function like strcmp.
-	 * @param array $options The available options are:
-	 *        - No options yet implemented
-	 * @return $this, useful for chaining this with other methods.
+	 * @link http://php.net/sort
+	 * @link http://php.net/usort
+	 * @link http://php.net/strcmp
+	 * @param string|callable $sorter The sorter for the data. Either a callable to use
+	 *        as the sort function or a string with the name of a well-known sort function like
+	 *        `'natsort'` or a compare function like `'strcmp'`. Defaults to `'sort'`.
+	 * @param array $options Reserved for future use.
+	 * @return Collection Returns itself.
 	 */
 	public function sort($sorter = 'sort', array $options = array()) {
 		if (is_string($sorter) && strpos($sorter, 'sort') !== false && is_callable($sorter)) {
@@ -416,7 +425,7 @@ class Collection extends \lithium\core\Object implements \ArrayAccess, \Iterator
 	 * @return mixed The value which was set.
 	 */
 	public function offsetSet($offset, $value) {
-		if (is_null($offset)) {
+		if ($offset === null) {
 			return $this->_data[] = $value;
 		}
 		return $this->_data[$offset] = $value;

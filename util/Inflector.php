@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/mit-license.php The MIT License
  */
 
@@ -179,8 +179,9 @@ class Inflector {
 			'leaf' => 'leaves', 'money' => 'monies', 'mongoose' => 'mongooses', 'move' => 'moves',
 			'mythos' => 'mythoi', 'numen' => 'numina', 'occiput' => 'occiputs',
 			'octopus' => 'octopuses', 'opus' => 'opuses', 'ox' => 'oxen', 'penis' => 'penises',
-			'person' => 'people', 'sex' => 'sexes', 'soliloquy' => 'soliloquies',
-			'testis' => 'testes', 'trilby' => 'trilbys', 'turf' => 'turfs'
+			'person' => 'people', 'sex' => 'sexes', 'sleeve' => 'sleeves',
+			'soliloquy' => 'soliloquies', 'tax' => 'taxes', 'testis' => 'testes',
+			'trilby' => 'trilbys', 'turf' => 'turfs'
 		),
 		'uninflected' => array(
 			'.*[nrlm]ese', '.*deer', '.*fish', '.*measles', '.*ois', '.*pox', '.*sheep'

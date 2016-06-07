@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -28,6 +28,13 @@ class Schema extends \lithium\data\DocumentSchema {
 		'int'          => 'integer'
 	);
 
+	/**
+	 * Constructor.
+	 *
+	 * @param array $config Available configuration options are:
+	 *        - `'fields'` _array_
+	 * @return void
+	 */
 	public function __construct(array $config = array()) {
 		$defaults = array('fields' => array('_id' => array('type' => 'id')));
 		parent::__construct(array_filter($config) + $defaults);
@@ -42,7 +49,7 @@ class Schema extends \lithium\data\DocumentSchema {
 				return is_string($v) && preg_match('/^[0-9a-f]{24}$/', $v) ? new MongoId($v) : $v;
 			},
 			'date' => function($v) {
-				$v = is_numeric($v) ? intval($v) : strtotime($v);
+				$v = is_numeric($v) ? (integer) $v : strtotime($v);
 				return !$v ? new MongoDate() : new MongoDate($v);
 			},
 			'regex'   => function($v) { return new MongoRegex($v); },

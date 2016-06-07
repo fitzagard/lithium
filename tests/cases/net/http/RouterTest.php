@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -11,6 +11,7 @@ namespace lithium\tests\cases\net\http;
 use lithium\action\Request;
 use lithium\net\http\Router;
 use lithium\action\Response;
+use lithium\tests\mocks\action\MockDispatcher;
 
 class RouterTest extends \lithium\test\Unit {
 
@@ -207,8 +208,9 @@ class RouterTest extends \lithium\test\Unit {
 
 		$ex = "No parameter match found for URL ";
 		$ex .= "`('controller' => 'Sessions', 'action' => 'create', 'id' => 'foo')`.";
-		$this->expectException($ex);
-		$result = Router::match(array("Sessions::create", 'id' => 'foo'));
+		$this->assertException($ex, function() {
+			Router::match(array("Sessions::create", 'id' => 'foo'));
+		});
 	}
 
 	/**
@@ -226,11 +228,11 @@ class RouterTest extends \lithium\test\Unit {
 
 		$ex = "No parameter match found for URL `(";
 		$ex .= "'controller' => 'Posts', 'action' => 'view', 'id' => '4bbf25bd8ead0e5180130000')`.";
-		$this->expectException($ex);
-		$result = Router::match(array(
-			'controller' => 'posts', 'action' => 'view', 'id' => '4bbf25bd8ead0e5180130000'
-		));
-		$this->assertFalse(ob_get_length());
+		$this->assertException($ex, function() {
+			Router::match(array(
+				'controller' => 'posts', 'action' => 'view', 'id' => '4bbf25bd8ead0e5180130000'
+			));
+		});
 	}
 
 	public function testShorthandParameterMatching() {
@@ -279,10 +281,11 @@ class RouterTest extends \lithium\test\Unit {
 		$result = Router::match(array('controller' => 'sessions', 'action' => 'add'));
 		$this->assertIdentical('/login', $result);
 
-		$this->expectException(
-			"No parameter match found for URL `('controller' => 'Sessions', 'action' => 'index')`."
-		);
-		Router::match(array('controller' => 'sessions', 'action' => 'index'));
+		$expected  = "No parameter match found for URL `('controller' => 'Sessions', ";
+		$expected .= "'action' => 'index')`.";
+		$this->assertException($expected, function() {
+			Router::match(array('controller' => 'sessions', 'action' => 'index'));
+		});
 	}
 
 	/**
@@ -292,10 +295,11 @@ class RouterTest extends \lithium\test\Unit {
 		Router::connect('/{:controller}');
 		$this->assertIdentical('/posts', Router::match(array('controller' => 'posts')));
 
-		$this->expectException(
-			"No parameter match found for URL `('controller' => 'Posts', 'action' => 'view')`."
-		);
-		Router::match(array('controller' => 'posts', 'action' => 'view'));
+		$expected  = "No parameter match found for URL `('controller' => 'Posts', ";
+		$expected .= "'action' => 'view')`.";
+		$this->assertException($expected, function() {
+			Router::match(array('controller' => 'posts', 'action' => 'view'));
+		});
 	}
 
 	/**
@@ -319,8 +323,9 @@ class RouterTest extends \lithium\test\Unit {
 
 		$ex = "No parameter match found for URL ";
 		$ex .= "`('controller' => 'Posts', 'action' => 'view', 'id' => '2')`.";
-		$this->expectException($ex);
-		Router::match(array('controller' => 'posts', 'action' => 'view', 'id' => '2'));
+		$this->assertException($ex, function() {
+			Router::match(array('controller' => 'posts', 'action' => 'view', 'id' => '2'));
+		});
 	}
 
 	/**
@@ -359,6 +364,16 @@ class RouterTest extends \lithium\test\Unit {
 		$base = 'https://' . $this->request->env('HTTP_HOST');
 		$base .= $this->request->env('base');
 		$this->assertIdentical($base . '/login', $result);
+	}
+
+	public function testEmptyUrlMatching() {
+		$result = Router::match('');
+		$expected = '/';
+		$this->assertIdentical($expected, $result);
+
+		$this->assertException('/No parameter match found for URL/', function() {
+			Router::match(array());
+		});
 	}
 
 	/**
@@ -809,6 +824,21 @@ class RouterTest extends \lithium\test\Unit {
 		Router::formatters(array('action' => null));
 		$formatters = Router::formatters();
 		$this->assertEqual(array('args', 'controller'), array_keys($formatters));
+	}
+
+	public function testRouteFormattersAppliedOnMatch() {
+		Router::reset();
+		Router::connect('/{:controller:lists}/{:action:add}');
+		$this->assertIdentical(
+			'/lists/add',
+			Router::match(array('controller' => 'lists', 'action' => 'add'))
+		);
+
+		Router::connect('/lists/{:action:add}', array('controller' => 'lists'));
+		$this->assertIdentical(
+			'/lists/add',
+			Router::match(array('controller' => 'lists', 'action' => 'add'))
+		);
 	}
 
 	public function testRouteModifiers() {
@@ -1373,21 +1403,21 @@ class RouterTest extends \lithium\test\Unit {
 
 		$ex = "No parameter match found for URL `('controller' => 'User', ";
 		$ex .= "'action' => 'view', 'args' => 'bob')` in `app` scope.";
-		$this->expectException($ex);
-
-		$result = Router::match(array(
-			'User::view', 'args' => 'bob'
-		), null, array('scope' => 'app'));
+		$this->assertException($ex, function() {
+			Router::match(array(
+				'User::view', 'args' => 'bob'
+			), null, array('scope' => 'app'));
+		});
 	}
 
 	public function testMatchWithNoRouteDefined() {
 		$ex = "No parameter match found for URL `('controller' => 'User', ";
 		$ex .= "'action' => 'view', 'args' => 'bob')` in `app` scope.";
-		$this->expectException($ex);
-
-		$result = Router::match(array(
-			'User::view', 'args' => 'bob'
-		), null, array('scope' => 'app'));
+		$this->assertException($ex, function() {
+			Router::match(array(
+				'User::view', 'args' => 'bob'
+			), null, array('scope' => 'app'));
+		});
 	}
 
 	public function testProcessWithAbsoluteAttachment() {
@@ -1890,6 +1920,40 @@ class RouterTest extends \lithium\test\Unit {
 			'library' => 'myapp', 'controller' => 'hello', 'action' => 'world'
 		));
 		$this->assertEqual($expected, $result);
+	}
+
+	public function testMatchWithAbsoluteScope() {
+		Router::attach('app', array(
+			'absolute' => true,
+			'host' => '{:domain}',
+		));
+
+		Router::scope('app', function(){
+			Router::connect('/hello', 'Posts::index');
+		});
+
+		$request = new Request(array('url' => '/hello', 'base' => ''));
+		$result = Router::process($request);
+
+		$expected = 'http://' . $result->params['domain'] . '/hello';
+		$result = Router::match($result->params, $request);
+
+		$this->assertEqual($expected, $result);
+	}
+
+	public function testMatchWithScopeAndWithoutController() {
+		Router::scope('app', function() {
+			Router::connect('/{:id}', 'Posts::index');
+		});
+
+		$request = new Request(array('url' => '/1', 'base' => ''));
+		MockDispatcher::run($request);
+
+		$result = Router::match(array(
+			'id' => 2
+		), $request);
+
+		$this->assertEqual('/2', $result);
 	}
 }
 

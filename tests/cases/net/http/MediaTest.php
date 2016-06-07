@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -413,8 +413,6 @@ class MediaTest extends \lithium\test\Unit {
 
 	/**
 	 * Tests that rendering plain text correctly returns the render data as-is.
-	 *
-	 * @return void
 	 */
 	public function testPlainTextOutput() {
 		$response = new Response();
@@ -428,32 +426,30 @@ class MediaTest extends \lithium\test\Unit {
 	/**
 	 * Tests that an exception is thrown for cases where an attempt is made to render content for
 	 * a type which is not registered.
-	 *
-	 * @return void
 	 */
 	public function testUndhandledContent() {
 		$response = new Response();
 		$response->type('bad');
 
-		$this->expectException("Unhandled media type `bad`.");
-		Media::render($response, array('foo' => 'bar'));
+		$this->assertException("Unhandled media type `bad`.", function() use ($response) {
+			Media::render($response, array('foo' => 'bar'));
+		});
 
 		$result = $response->body();
-		$this->assertNull($result);
+		$this->assertIdentical('', $result);
 	}
 
 	/**
 	 * Tests that attempts to render a media type with no handler registered produces an
 	 * 'unhandled media type' exception, even if the type itself is a registered content type.
-	 *
-	 * @return void
 	 */
 	public function testUnregisteredContentHandler() {
 		$response = new Response();
 		$response->type('xml');
 
-		$this->expectException("Unhandled media type `xml`.");
-		Media::render($response, array('foo' => 'bar'));
+		$this->assertException("Unhandled media type `xml`.", function() use ($response) {
+			Media::render($response, array('foo' => 'bar'));
+		});
 
 		$result = $response->body;
 		$this->assertNull($result);
@@ -462,8 +458,6 @@ class MediaTest extends \lithium\test\Unit {
 	/**
 	 * Tests handling content type manually using parameters to `Media::render()`, for content types
 	 * that are registered but have no default handler.
-	 *
-	 * @return void
 	 */
 	public function testManualContentHandling() {
 		Media::type('custom', 'text/x-custom');
@@ -480,19 +474,15 @@ class MediaTest extends \lithium\test\Unit {
 		$expected = array("Message: Hello, world!");
 		$this->assertEqual($expected, $result);
 
-		$this->expectException("/Template not found/");
-		Media::render($response, 'Hello, world!');
-
-		$result = $response->body;
-		$this->assertNull($result);
+		$this->assertException("/Template not found/", function() use ($response) {
+			Media::render($response, 'Hello, world!');
+		});
 	}
 
 	/**
 	 * Tests that parameters from the `Request` object passed into `render()` via
 	 * `$options['request']` are properly merged into the `$options` array passed to render
 	 * handlers.
-	 *
-	 * @return void
 	 */
 	public function testRequestOptionMerging() {
 		Media::type('custom', 'text/x-custom');
@@ -533,8 +523,10 @@ class MediaTest extends \lithium\test\Unit {
 		$response = new Response();
 		$response->type('html');
 
-		$this->expectException('/Template not found/');
-		Media::render($response, null, compact('request'));
+		$this->assertException("/Template not found/", function() use ($response) {
+			Media::render($response, null, compact('request'));
+		});
+
 		$this->_cleanUp();
 	}
 
@@ -563,8 +555,6 @@ class MediaTest extends \lithium\test\Unit {
 
 	/**
 	 * Tests that the `Media` class' configuration can be reset to its default state.
-	 *
-	 * @return void
 	 */
 	public function testStateReset() {
 		$this->assertFalse(in_array('foo', Media::types()));
@@ -595,8 +585,6 @@ class MediaTest extends \lithium\test\Unit {
 	/**
 	 * Tests that calling `Media::type()` to retrieve the details of a type that is aliased to
 	 * another type, automatically resolves to the settings of the type being pointed at.
-	 *
-	 * @return void
 	 */
 	public function testTypeAliasResolution() {
 		$resolved = Media::type('text');
@@ -642,8 +630,6 @@ class MediaTest extends \lithium\test\Unit {
 	/**
 	 * Tests that the `Response` object can be directly modified from a templating class or encode
 	 * function.
-	 *
-	 * @return void
 	 */
 	public function testResponseModification() {
 		Media::type('my', 'text/x-my', array('view' => 'lithium\tests\mocks\net\http\Template'));
@@ -656,8 +642,6 @@ class MediaTest extends \lithium\test\Unit {
 	/**
 	 * Tests that `Media::asset()` will not prepend path strings with the base application path if
 	 * it has already been prepended.
-	 *
-	 * @return void
 	 */
 	public function testDuplicateBasePathCheck() {
 		$result = Media::asset('/foo/bar/image.jpg', 'image', array('base' => '/bar'));
@@ -671,6 +655,18 @@ class MediaTest extends \lithium\test\Unit {
 
 		$result = Media::asset('/foo/bar/image.jpg', 'image', array('base' => ''));
 		$this->assertEqual('/foo/bar/image.jpg', $result);
+	}
+
+	public function testContentNegotiationSimple() {
+		$request = new Request(array('env' => array(
+			'HTTP_ACCEPT' => 'text/html,text/plain;q=0.5'
+		)));
+		$this->assertEqual('html', Media::negotiate($request));
+
+		$request = new Request(array('env' => array(
+			'HTTP_ACCEPT' => 'application/json'
+		)));
+		$this->assertEqual('json', Media::negotiate($request));
 	}
 
 	public function testContentNegotiationByType() {
@@ -720,7 +716,8 @@ class MediaTest extends \lithium\test\Unit {
 
 	public function testLocation() {
 		$webroot = Libraries::get(true, 'resources') . '/tmp/tests/webroot';
-		mkdir($webroot);
+		mkdir($webroot, 0777, true);
+
 		$webroot = realpath($webroot);
 		$this->assertNotEmpty($webroot);
 		Media::attach('tests', array(

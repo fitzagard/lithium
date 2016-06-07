@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2012, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -20,14 +20,14 @@ class Response extends \lithium\core\Object {
 	/**
 	 * Output stream, STDOUT
 	 *
-	 * @var stream
+	 * @var resource
 	 */
 	public $output = null;
 
 	/**
 	 * Error stream, STDERR
 	 *
-	 * @var stream
+	 * @var resource
 	 */
 	public $error = null;
 
@@ -43,12 +43,12 @@ class Response extends \lithium\core\Object {
 	public $status = 0;
 
 	/**
-	 * Construct Request object
+	 * Constructor.
 	 *
-	 * @param array $config
-	 *              - request object lithium\console\Request
-	 *              - output stream
-	 *              _ error stream
+	 * @param array $config Available configuration options are:
+	 *        - `'output'` _resource|null_
+	 *        - `'error'` _resource|null_
+	 * @return void
 	 */
 	public function __construct($config = array()) {
 		$defaults = array('output' => null, 'error' => null);
@@ -89,7 +89,9 @@ class Response extends \lithium\core\Object {
 	}
 
 	/**
-	 * Destructor to close streams
+	 * Destructor. Closes streams.
+	 *
+	 * @return void
 	 */
 	public function __destruct() {
 		if ($this->output) {
@@ -103,7 +105,7 @@ class Response extends \lithium\core\Object {
 	/**
 	 * Handles styling output.
 	 *
-	 * @param array $styles
+	 * @param array|boolean $styles
 	 * @return array
 	 */
 	public function styles($styles = array()) {

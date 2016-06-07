@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -28,10 +28,10 @@ class Test extends \lithium\console\Command {
 	 * List of filters to apply before/during/after test run, separated by commas.
 	 *
 	 * For example:
-	 * {{{
+	 * ```sh
 	 * lithium test lithium/tests/cases/core/ObjectTest.php --filters=Coverage
 	 * lithium test lithium/tests/cases/core/ObjectTest.php --filters=Coverage,Profiler
-	 * }}}
+	 * ```
 	 *
 	 * @var string Name of a filter or a comma separated list of filter names. Builtin filters:
 	 *      - `Affected`:   Adds tests to the run affected by the classes covered by current tests.
@@ -182,36 +182,37 @@ class Test extends \lithium\console\Command {
 	 * Runs tests given a path to a directory or file containing tests. The path to the
 	 * test(s) may be absolute or relative to the current working directory.
 	 *
-	 * {{{
+	 * ```sh
 	 * li3 test lithium/tests/cases/core/ObjectTest.php
 	 * li3 test lithium/tests/cases/core
-	 * }}}
+	 * ```
 	 *
 	 * If you are in the working directory of an application or plugin and wish to run all tests,
 	 * simply execute the following:
 	 *
-	 * {{{
+	 * ```sh
 	 * li3 test tests/cases
-	 * }}}
+	 * ```
 	 *
 	 * If you are in the working directory of an application and wish to run a plugin, execute one
 	 * of the following:
 	 *
-	 * {{{
+	 * ```sh
 	 * li3 test libraries/<plugin>/tests/cases
 	 * li3 test <plugin>/tests/cases
-	 * }}}
+	 * ```
 	 *
 	 *
 	 * This will run `<library>/tests/cases/<package>/<class>Test.php`:
 	 *
-	 * {{{
+	 * ```sh
 	 * li3 test <library>/<package>/<class>.php
-	 * }}}
+	 * ```
 	 *
 	 * @param string $path Absolute or relative path to tests or a file which
 	 *                     corresponding test should be run.
-	 * @return boolean Will exit with status `1` if one or more tests failed otherwise with `0`.
+	 * @return integer|boolean Will (indirectly) exit with status `1` if one or more tests
+	 *         failed otherwise with `0`.
 	 */
 	public function run($path = null) {
 		if (!$path = $this->_path($path)) {
@@ -232,7 +233,6 @@ class Test extends \lithium\console\Command {
 		$filters = $this->filters ? array_map('trim', explode(',', $this->filters)) : array();
 		$params = compact('filters') + array('format' => $this->format);
 		$runner = function($options = array()) use ($path, $params) {
-			error_reporting(E_ALL | E_STRICT | E_DEPRECATED);
 			return Dispatcher::run($path, $params + $options);
 		};
 		$report = $handlers[$this->format]($runner, $path);
@@ -268,13 +268,13 @@ class Test extends \lithium\console\Command {
 	 *
 	 * This method can be thought of the reverse of `Libraries::path()`.
 	 *
-	 * {{{
+	 * ```
 	 * lithium/tests/cases/core/ObjectTest.php -> lithium\tests\cases\core\ObjectTest
 	 * lithium/tests/cases/core                -> lithium\tests\cases\core
 	 * lithium/core/Object.php                 -> lithium\core\Object
 	 * lithium/core/                           -> lithium\core
 	 * lithium/core                            -> lithium\core
-	 * }}}
+	 * ```
 	 *
 	 * @see lithium\core\Libraries::path()
 	 * @param string $path The directory of or file path to one or more classes.

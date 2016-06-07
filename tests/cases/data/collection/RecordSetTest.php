@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -10,7 +10,7 @@ namespace lithium\tests\cases\data\collection;
 
 use lithium\data\collection\RecordSet;
 use lithium\tests\mocks\data\collection\MockRecordSet;
-use lithium\tests\mocks\data\model\mock_database\MockResult;
+use lithium\tests\mocks\data\model\database\MockResult;
 use lithium\tests\mocks\data\MockPostObject;
 use lithium\util\Collection;
 
@@ -570,37 +570,6 @@ class RecordSetTest extends \lithium\test\Unit {
 			$counter++;
 		}
 		$this->assertEqual(4, $counter);
-	}
-
-	public function testRewindResourceOnConstruct() {
-		$result = new MockResult(array('records' => $this->_records));
-
-		$model = $this->_model;
-
-		$cpt = 0;
-		while ($result->valid()) {
-			$result->current();
-			$result->next();
-			$cpt++;
-		}
-		$this->assertEqual(4, $cpt);
-
-		$cpt = 0;
-		foreach ($result as $value) {
-			$cpt++;
-		}
-		$this->assertEqual(4, $cpt);
-		$result->rewind();
-
-		$recordSet = new MockRecordSet(compact('result', 'model'));
-		$expected = array(
-			1 => array('id' => 1, 'data' => 'data1'),
-			2 => array('id' => 2, 'data' => 'data2'),
-			3 => array('id' => 3, 'data' => 'data3'),
-			4 => array('id' => 4, 'data' => 'data4')
-		);
-		$result = $recordSet->to('array');
-		$this->assertEqual($expected, $result);
 	}
 
 	public function testMockResultContent() {

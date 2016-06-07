@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -16,7 +16,7 @@ use lithium\tests\mocks\data\model\MockDatabasePost;
 use lithium\tests\mocks\data\model\MockDatabaseComment;
 use lithium\tests\mocks\data\model\MockDatabaseTagging;
 use lithium\tests\mocks\data\model\MockDatabasePostRevision;
-use lithium\tests\mocks\data\model\mock_database\MockResult;
+use lithium\tests\mocks\data\model\database\MockResult;
 use lithium\tests\mocks\data\model\MockGallery;
 use lithium\tests\mocks\data\model\MockImage;
 use lithium\tests\mocks\data\model\MockImageTag;
@@ -29,8 +29,11 @@ class DatabaseTest extends \lithium\test\Unit {
 	protected $_configs = array();
 
 	protected $_model = 'lithium\tests\mocks\data\model\MockDatabasePost';
+
 	protected $_comment = 'lithium\tests\mocks\data\model\MockDatabaseComment';
+
 	protected $_gallery = 'lithium\tests\mocks\data\model\MockGallery';
+
 	protected $_imageTag = 'lithium\tests\mocks\data\model\MockImageTag';
 
 	public function setUp() {
@@ -106,31 +109,41 @@ class DatabaseTest extends \lithium\test\Unit {
 		$this->assertEqual("{Model}.{name name}", $result);
 	}
 
-	public function testValueWithSchema() {
+	public function testNullValueWithSchemaFormatter() {
 		$result = $this->_db->value(null);
 		$this->assertIdentical('NULL', $result);
+	}
 
+	public function testStringValueWithSchemaFormatter() {
 		$result = $this->_db->value('string', array('type' => 'string'));
 		$this->assertEqual("'string'", $result);
 
+		$result = $this->_db->value('1', array('type' => 'string'));
+		$this->assertIdentical("'1'", $result);
+	}
+
+	public function testBooleanValueWithSchemaFormatter() {
 		$result = $this->_db->value('true', array('type' => 'boolean'));
 		$this->assertIdentical(1, $result);
+	}
 
+	public function testNumericValueWithSchemaFormatter() {
 		$result = $this->_db->value('1', array('type' => 'integer'));
 		$this->assertIdentical(1, $result);
 
 		$result = $this->_db->value('1.1', array('type' => 'float'));
 		$this->assertIdentical(1.1, $result);
+	}
 
-		$result = $this->_db->value('1', array('type' => 'string'));
-		$this->assertIdentical("'1'", $result);
-
+	public function testObjectValueWithSchemaFormatter() {
 		$result = $this->_db->value((object) 'REGEXP "^fo$"');
 		$this->assertIdentical('REGEXP "^fo$"', $result);
 
 		$result = $this->_db->value((object) 'CURRENT_TIMESTAMP', array('type' => 'timestamp'));
 		$this->assertIdentical('CURRENT_TIMESTAMP', $result);
+	}
 
+	public function testDateTimeValueWithSchemaFormatter() {
 		$result = $this->_db->value('2012-05-25 22:44:00', array('type' => 'timestamp'));
 		$this->assertIdentical("'2012-05-25 22:44:00'", $result);
 
@@ -145,15 +158,46 @@ class DatabaseTest extends \lithium\test\Unit {
 
 		$result = $this->_db->value('now', array('type' => 'time'));
 		$this->assertPattern("/^'\d{2}:\d{2}:\d{2}'/", $result);
+
+		$result = $this->_db->value('', array('type' => 'date'));
+		$this->assertIdentical('NULL', $result);
+
+		$result = $this->_db->value('', array('type' => 'time'));
+		$this->assertIdentical('NULL', $result);
+
+		$result = $this->_db->value('', array('type' => 'timestamp'));
+		$this->assertIdentical('NULL', $result);
+
+		$result = $this->_db->value('', array('type' => 'datetime'));
+		$this->assertIdentical('NULL', $result);
+
+		$result = $this->_db->value('', array(
+			'type' => 'date', 'default' => '2012-05-25'
+		));
+		$this->assertIdentical("'2012-05-25'", $result);
+
+		$result = $this->_db->value('', array(
+			'type' => 'time', 'default' => '08:00:00'
+		));
+		$this->assertIdentical("'08:00:00'", $result);
+
+		$result = $this->_db->value('', array(
+			'type' => 'timestamp', 'default' => 'now'
+		));
+		$this->assertPattern("/^'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}'/", $result);
 	}
 
-	public function testValueByIntrospect() {
+	public function testStringValueByIntrospection() {
 		$result = $this->_db->value("string");
 		$this->assertIdentical("'string'", $result);
+	}
 
+	public function testBooleanValueByIntrospection() {
 		$result = $this->_db->value(true);
 		$this->assertIdentical(1, $result);
+	}
 
+	public function testNumericValueByIntrospection() {
 		$result = $this->_db->value('1');
 		$this->assertIdentical(1, $result);
 
@@ -466,11 +510,20 @@ class DatabaseTest extends \lithium\test\Unit {
 	}
 
 	public function testCalculation() {
+		$backup = error_reporting();
+		error_reporting(E_ALL);
+
 		$options = array('type' => 'read', 'model' => $this->_model);
-		$this->expectException('Undefined offset: 0');
-		$result = $this->_db->calculation('count', new Query($options), $options);
+		$result = null;
+		$db = $this->_db;
+
+		$this->assertException('Undefined offset: 0', function() use (&$result, $options, $db) {
+			$result = $db->calculation('count', new Query($options), $options);
+		});
 		$expected = 'SELECT COUNT(*) as count FROM {mock_database_posts} AS {MockDatabasePost};';
 		$this->assertEqual($expected, $this->_db->sql);
+
+		error_reporting($backup);
 	}
 
 	public function testReadWithQueryStringReturnArrayWithSchema() {
@@ -596,7 +649,7 @@ class DatabaseTest extends \lithium\test\Unit {
 		$this->assertEqual($expected, $result);
 
 		$result = $this->_db->order(array("title" => "desc"), $query);
-		$expected = 'ORDER BY {MockDatabasePost}.{title} desc';
+		$expected = 'ORDER BY {MockDatabasePost}.{title} DESC';
 		$this->assertEqual($expected, $result);
 
 		$result = $this->_db->order(array("title" => "dasc"), $query);
@@ -958,6 +1011,18 @@ class DatabaseTest extends \lithium\test\Unit {
 		$this->assertEqual("HAVING CUSTOM", $this->_db->having("CUSTOM", $query));
 	}
 
+	/**
+	 * Verifies that setting options using a raw SQL string works, when
+	 * the operation returns no result.
+	 *
+	 * @link https://github.com/UnionOfRAD/lithium/issues/1210
+	 */
+	public function testRawOptionSettingWithNoResultResource() {
+		$expected = array();
+		$result = $this->_db->read('SET SESSION group_concat_max_len = 100000;');
+		$this->assertEqual($expected, $result);
+	}
+
 	public function testRelationshipGeneration() {
 		$comment = 'lithium\tests\mocks\data\model\MockDatabaseComment';
 
@@ -999,8 +1064,11 @@ class DatabaseTest extends \lithium\test\Unit {
 	}
 
 	public function testInvalidQueryType() {
-		$this->expectException('Invalid query type `fakeType`.');
-		$this->_db->read(new Query(array('type' => 'fakeType')));
+		$db = $this->_db;
+
+		$this->assertException('Invalid query type `fakeType`.', function() use ($db) {
+			$db->read(new Query(array('type' => 'fakeType')));
+		});
 	}
 
 	public function testReadWithRelationship() {
@@ -1046,8 +1114,8 @@ class DatabaseTest extends \lithium\test\Unit {
 		$query = new Query(array(
 			'type' => 'read', 'model' => $this->_model
 		));
-		$result = $this->_db->group(array('id' => 'ASC'), $query);
-		$expected = 'GROUP BY {MockDatabasePost}.{id} ASC';
+		$result = $this->_db->group(array('id'), $query);
+		$expected = 'GROUP BY {MockDatabasePost}.{id}';
 		$this->assertEqual($expected, $result);
 	}
 
@@ -1168,8 +1236,11 @@ class DatabaseTest extends \lithium\test\Unit {
 				)
 			))
 		));
-		$this->expectException("Unsupported operator `=>`.");
-		$this->_db->renderCommand($query);
+		$db = $this->_db;
+
+		$this->assertException("Unsupported operator `=>`.", function() use ($db, $query) {
+			$db->renderCommand($query);
+		});
 	}
 
 	public function testRenderArrayJoin() {
@@ -1205,6 +1276,58 @@ class DatabaseTest extends \lithium\test\Unit {
 		$expected .= "{MockDatabaseComment} ON {MockDatabasePost}.{id} = ";
 		$expected .= "{MockDatabaseComment}.{mock_database_post_id} WHERE ";
 		$expected .= "{MockDatabasePost}.{id} = 5 LIMIT 1;";
+		$this->assertEqual($expected, $result);
+	}
+
+	/**
+	 * Tests that when using LIMIT together with relation conditions and relationship,
+	 * relation conditions are passed into the subsequent query issued.
+	 *
+	 * @link https://github.com/UnionOfRAD/lithium/pull/1099
+	 */
+	public function testModelFindFirstPassesConditionsIntoSubsequent() {
+		$this->_db->log = true;
+		$this->_db->return['_execute'] = new MockResult(array(
+			'records' => array(
+				array(0 => 5)
+			)
+		));
+
+		MockDatabasePost::find('first', array(
+			'conditions' => array(
+				'id' => 5,
+				'is_published' => true,
+				'MockDatabaseComment.is_spam' => false
+			),
+			'with' => 'MockDatabaseComment'
+		));
+		$this->_db->log = false;
+
+		$result = $this->_db->logs;
+
+		$expected[0] = <<<SQL
+SELECT DISTINCT({MockDatabasePost}.{id}) AS _ID_
+	FROM {mock_database_posts} AS {MockDatabasePost}
+	LEFT JOIN {mock_database_comments} AS {MockDatabaseComment}
+		ON {MockDatabasePost}.{id} = {MockDatabaseComment}.{mock_database_post_id}
+	WHERE
+		{MockDatabasePost}.{id} = 5
+		AND {MockDatabasePost}.{is_published} = 1
+		AND {MockDatabaseComment}.{is_spam} = 0
+	LIMIT 1;
+SQL;
+		$expected[1] = <<<SQL
+SELECT * FROM {mock_database_posts} AS {MockDatabasePost}
+	LEFT JOIN {mock_database_comments} AS {MockDatabaseComment}
+		ON {MockDatabasePost}.{id} = {MockDatabaseComment}.{mock_database_post_id}
+	WHERE
+		{MockDatabasePost}.{id} IN (5)
+		AND {MockDatabaseComment}.{is_spam} = 0;
+SQL;
+
+		$expected = array_map(function($v) {
+			return preg_replace('/[\t\n]+/', ' ', $v);
+		}, $expected);
 		$this->assertEqual($expected, $result);
 	}
 
@@ -1691,6 +1814,150 @@ class DatabaseTest extends \lithium\test\Unit {
 
 		$expected = "INSERT INTO {mock_database_posts} ({title}) VALUES ('{:foobar}');";
 		$this->assertEqual($expected, $this->_db->sql);
+	}
+
+	public function testIncrement() {
+		$entity = new Record(array(
+			'model' => $this->_model,
+			'data' => array('id' => 1, 'balance' => 10),
+			'exists' => true
+		));
+
+		$entity->increment('balance', 10);
+		$query = new Query(compact('entity') + array('type' => 'update'));
+		$result = $this->_db->update($query);
+		$expected = "UPDATE {mock_database_posts} SET {id} = 1, {balance} = {balance} + 10 WHERE {id} = 1;";
+		$this->assertEqual($expected, $this->_db->sql);
+
+		$entity->increment('balance', 10);
+		$entity->decrement('balance', 20);
+		$query = new Query(compact('entity') + array('type' => 'update'));
+		$result = $this->_db->update($query);
+		$expected = "UPDATE {mock_database_posts} SET {id} = 1, {balance} = {balance} + -10 WHERE {id} = 1;";
+		$this->assertEqual($expected, $this->_db->sql);
+
+		$entity->increment('balance', 10);
+		$entity->balance = 20;
+		$query = new Query(compact('entity') + array('type' => 'update'));
+		$result = $this->_db->update($query);
+		$expected = "UPDATE {mock_database_posts} SET {id} = 1, {balance} = 20 WHERE {id} = 1;";
+		$this->assertEqual($expected, $this->_db->sql);
+
+		$this->assertException("Field 'name' cannot be incremented.", function() use ($entity) {
+			$entity->name = 'Ali';
+			$entity->increment('name', 10);
+		});
+	}
+
+	public function testHasManyRelationsWithLimitAndWithoutConditions() {
+		$this->_db->return['_execute'] = function($sql) {
+			if (strpos($sql, 'SELECT DISTINCT') === 0) {
+				return new MockResult(array(
+					'records' => array(
+						array(1),
+						array(2)
+					)
+				));
+			} else {
+				return new MockResult(array(
+					'records' => array(
+						array(
+							'1',
+							'2',
+							'Post title',
+							'2014-10-12 01:39:00',
+							'3',
+							'1',
+							'2',
+							'Very good post',
+							'2014-10-12 01:39:00',
+						)
+					)
+				));
+
+			}
+		};
+
+		$query = new Query(array(
+			'type' => 'read',
+			'model' => $this->_model,
+			'with' => array('MockDatabaseComment'),
+			'limit' => 3,
+		));
+		$result = $this->_db->read($query, array('return' => 'array'));
+
+		$expected = array(array(
+			'id' => '1',
+			'author_id' => '2',
+			'title' => 'Post title',
+			'created' => '2014-10-12 01:39:00',
+			'MockDatabaseComment' => array(
+				'id' => '3',
+				'post_id' => '1',
+				'author_id' => '2',
+				'body' => 'Very good post',
+				'created' => '2014-10-12 01:39:00',
+			)
+		));
+		$this->assertEqual($expected, $result);
+	}
+
+	public function testMultiHasManyRelationsWithLimit() {
+		$this->_db->log = true;
+		$this->_db->return['_execute'] = new MockResult(array(
+			'records' => array(
+				array(0 => 5)
+			)
+		));
+
+		MockDatabasePost::find('first', array(
+			'conditions' => array(
+				'id' => 5,
+				'is_published' => true,
+				'MockDatabaseComment.is_spam' => false,
+				'MockDatabasePostRevision.title' => 'foo',
+			),
+			'with' => array(
+				'MockDatabaseComment',
+				'MockDatabasePostRevision'
+			),
+		));
+		$this->_db->log = false;
+
+		$result = $this->_db->logs;
+
+		$expected[0] = <<<SQL
+SELECT DISTINCT({MockDatabasePost}.{id}) AS _ID_
+	FROM {mock_database_posts} AS {MockDatabasePost}
+	LEFT JOIN {mock_database_comments} AS {MockDatabaseComment}
+		ON {MockDatabasePost}.{id} = {MockDatabaseComment}.{mock_database_post_id}
+	LEFT JOIN {mock_database_post_revisions} AS {MockDatabasePostRevision}
+		ON {MockDatabasePostRevision}.{deleted} IS NULL
+			AND {MockDatabasePost}.{id} = {MockDatabasePostRevision}.{mock_database_post_id}
+	WHERE
+		{MockDatabasePost}.{id} = 5
+		AND {MockDatabasePost}.{is_published} = 1
+		AND {MockDatabaseComment}.{is_spam} = 0
+		AND {MockDatabasePostRevision}.{title} = 'foo'
+	LIMIT 1;
+SQL;
+		$expected[1] = <<<SQL
+SELECT * FROM {mock_database_posts} AS {MockDatabasePost}
+	LEFT JOIN {mock_database_comments} AS {MockDatabaseComment}
+		ON {MockDatabasePost}.{id} = {MockDatabaseComment}.{mock_database_post_id}
+	LEFT JOIN {mock_database_post_revisions} AS {MockDatabasePostRevision}
+		ON {MockDatabasePostRevision}.{deleted} IS NULL
+			AND {MockDatabasePost}.{id} = {MockDatabasePostRevision}.{mock_database_post_id}
+	WHERE
+		{MockDatabasePost}.{id} IN (5)
+		AND {MockDatabaseComment}.{is_spam} = 0
+		AND {MockDatabasePostRevision}.{title} = 'foo';
+SQL;
+
+		$expected = array_map(function($v) {
+			return preg_replace('/[\t\n]+/', ' ', $v);
+		}, $expected);
+		$this->assertEqual($expected, $result);
 	}
 }
 

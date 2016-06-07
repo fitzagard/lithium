@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -66,8 +66,6 @@ class StaticObjectTest extends \lithium\test\Unit {
 	/**
 	 * Tests that the correct parameters are always passed in `StaticObject::invokeMethod()`,
 	 * regardless of the number.
-	 *
-	 * @return void
 	 */
 	public function testMethodInvocationWithParameters() {
 		$class = 'lithium\tests\mocks\core\MockStaticMethodFiltering';
@@ -102,8 +100,6 @@ class StaticObjectTest extends \lithium\test\Unit {
 
 	/**
 	 * Tests that calling a filter-able method with no filters added does not trigger an error.
-	 *
-	 * @return void
 	 */
 	public function testCallingUnfilteredMethods() {
 		$class = 'lithium\tests\mocks\core\MockStaticMethodFiltering';
@@ -116,8 +112,6 @@ class StaticObjectTest extends \lithium\test\Unit {
 
 	/**
 	 * Tests that filtered methods in parent classes can call methods in subclasses.
-	 *
-	 * @return void
 	 */
 	public function testCallingSubclassMethodsInFilteredMethods() {
 		$class = 'lithium\tests\mocks\core\MockStaticFilteringExtended';
@@ -158,8 +152,9 @@ class StaticObjectTest extends \lithium\test\Unit {
 	}
 
 	public function testInstanceFalse() {
-		$this->expectException('/^Invalid class lookup/');
-		MockStaticInstantiator::instance(false);
+		$this->assertException('/^Invalid class lookup/', function() {
+			MockStaticInstantiator::instance(false);
+		});
 	}
 
 	public function testResetMethodFilter() {

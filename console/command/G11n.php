@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -25,7 +25,7 @@ class G11n extends \lithium\console\Command {
 	/**
 	 * Runs the `Extract` command.
 	 *
-	 * @return void
+	 * @return integer|boolean|void
 	 */
 	public function extract() {
 		$extract = new Extract(array('request' => $this->request));

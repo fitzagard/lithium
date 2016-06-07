@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -65,10 +65,21 @@ class Service extends \lithium\core\Object {
 	);
 
 	/**
-	 * Initializes a new `Service` instance with the default HTTP request settings and
-	 * transport- and format-handling classes.
+	 * Constructor. Initializes a new `Service` instance with the default HTTP request settings
+	 * and transport- and format-handling classes.
 	 *
-	 * @param array $config
+	 * @param array $config Available configuration options are:
+	 *        - `'persistent'` _boolean_
+	 *        - `'scheme'` _string_
+	 *        - `'host'` _string_
+	 *        - `'port'` _integer_
+	 *        - `'timeout'` _integer_
+	 *        - `'auth'` _boolean_
+	 *        - `'username'` _string_
+	 *        - `'password'` _string_
+	 *        - `'encoding'` _string_
+	 *        - `'socket'` _string_
+	 * @return void
 	 */
 	public function __construct(array $config = array()) {
 		$defaults = array(
@@ -87,8 +98,9 @@ class Service extends \lithium\core\Object {
 	}
 
 	/**
-	 * Initialize connection
+	 * Initialize connection.
 	 *
+	 * @return void
 	 */
 	protected function _init() {
 		$config = array('classes' => $this->_classes) + $this->_config;
@@ -110,6 +122,7 @@ class Service extends \lithium\core\Object {
 	 *
 	 * @param string $method
 	 * @param string $params
+	 * @return mixed
 	 */
 	public function __call($method, $params = array()) {
 		array_unshift($params, $method);
@@ -117,11 +130,13 @@ class Service extends \lithium\core\Object {
 	}
 
 	/**
-	 * Custom check to determine if our given magic methods can be responded to.
+	 * Determines if a given method can be called.
 	 *
-	 * @param  string  $method     Method name.
-	 * @param  bool    $internal   Interal call or not.
-	 * @return bool
+	 * @param string $method Name of the method.
+	 * @param boolean $internal Provide `true` to perform check from inside the
+	 *                class/object. When `false` checks also for public visibility;
+	 *                defaults to `false`.
+	 * @return boolean Returns `true` if the method can be called, `false` otherwise.
 	 */
 	public function respondsTo($method, $internal = false) {
 		return is_callable(array($this, $method), true);
@@ -203,7 +218,11 @@ class Service extends \lithium\core\Object {
 	}
 
 	/**
-	 * Send request and return response data.
+	 * Send request and return response data. Will open the connection if
+	 * needed and always close it after sending the request.
+	 *
+	 * Will automatically authenticate when receiving a `401` HTTP status code
+	 * then continue retrying sending initial request.
 	 *
 	 * @param string $method
 	 * @param string $path

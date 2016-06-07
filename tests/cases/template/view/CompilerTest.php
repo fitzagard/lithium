@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -80,19 +80,28 @@ class CompilerTest extends \lithium\test\Unit {
 	}
 
 	public function testFallbackWithNonWritableDirectory() {
-		$this->expectException('/failed to open stream/');
-		$result = Compiler::template("{$this->_path}/{$this->_file}", array(
-			'path' => Libraries::get(true, 'path') . '/foo',
-			'fallback' => true
-		));
-		$this->assertEqual("{$this->_path}/{$this->_file}", $result);
+		$backup = error_reporting();
+		error_reporting(E_ALL);
 
-		$this->expectException('/Could not write compiled template/');
-		$this->expectException('/failed to open stream/');
-		$result = Compiler::template("{$this->_path}/{$this->_file}", array(
-			'path' => Libraries::get(true, 'path') . '/foo',
-			'fallback' => false
-		));
+		$path = $this->_path;
+		$file = $this->_file;
+
+		$this->assertException('/failed to open stream/', function() use ($path, $file) {
+			Compiler::template("{$path}/{$file}", array(
+				'path' => Libraries::get(true, 'path') . '/foo',
+				'fallback' => true
+			));
+		});
+
+		$expected = '/(Could not write compiled template|failed to open stream)/';
+		$this->assertException($expected, function() use ($path, $file) {
+			$result = Compiler::template("{$path}/{$file}", array(
+				'path' => Libraries::get(true, 'path') . '/foo',
+				'fallback' => false
+			));
+		});
+
+		error_reporting($backup);
 	}
 
 	public function testTemplateCacheHit() {

@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2012, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -45,50 +45,62 @@ class Dispatcher extends \lithium\core\StaticObject {
 	);
 
 	/**
-	 * Contains pre-process format strings for changing Dispatcher's behavior based on 'rules'.
+	 * Contains pre-process format strings for changing Dispatcher's behavior based on `'rules'`.
 	 *
-	 * Each key in the array represents a 'rule'; if a key that matches the rule is present (and
-	 * not empty) in a route, (i.e. the result of `lithium\net\http\Router::parse()`) then the
-	 * rule's value will be applied to the route before it is dispatched.  When applying a rule, any
-	 * array elements of the flag which are present in the route will be modified
-	 * using a `lithium\util\String::insert()`-formatted string.  Alternatively,
-	 * a callback can be used to do custom transformations other than the
-	 * default `lithium\util\String::insert()`.
+	 * Each key in the array represents a 'rule'; if a key that matches the rule is present
+	 * (and not empty) in a route, (i.e. the result of `Router::parse()`) then the rule's
+	 * value will be applied to the route before it is dispatched. When applying a rule, any
+	 * array elements of the flag which are present in the route will be modified using a
+	 * `String::insert()`-formatted string. Alternatively, a callback can be used to do custom
+	 * transformations other than the default `String::insert()`.
 	 *
-	 * For example, to implement action prefixes (i.e. `admin_index()`), set a rule named 'admin',
-	 * with a value array containing a modifier key for the `action` element of a route, i.e.:
-	 * `array('action' => 'admin_{:action}')`. Now, if the `'admin'` key is present and not empty
-	 * in the parameters returned from routing, the value of `'action'` will be rewritten per the
-	 * settings in the rule.
+	 * For example, to implement action prefixes (i.e. `admin_index`), set a rule named
+	 * `'admin'`, with a value array containing a modifier key for the `action` element of
+	 * a route, i.e.: `array('action' => 'admin_{:action}')`. Now, if the `'admin'` key is
+	 * present and not empty in the parameters returned from routing, the value of `'action'`
+	 * will be rewritten per the settings in the rule:
+	 * ```
+	 * Dispatcher::config(array(
+	 *	'rules' => array(
+	 *		'admin' => 'admin_{:action}'
+	 *	)
+	 * ));
+	 * ```
 	 *
-	 * Here's another example.  To support normalizing actions,
-	 * set a rule named 'action' with a value array containing a callback that uses
-	 * `lithium\util\Inflector` to camelize the action:
+	 * The following example shows two rules that continuously or independently transform the
+	 * action parameter in order to allow any variations i.e. `'admin_index'`, `'api_index'`
+	 * and `'admin_api_index'`.
+	 * ```
+	 * // ...
+	 *		'api' => 'api_{:action}',
+	 *		'admin' => 'admin_{:action}'
+	 * // ...
+	 * ```
 	 *
-	 * {{{
-	 * use lithium\action\Dispatcher;
-	 * use lithium\util\Inflector;
+	 * Here's another example. To support normalizing actions, set a rule named `'action'` with
+	 * a value array containing a callback that uses `Inflector` to camelize the
+	 * action:
+	 * ```
+	 * // ...
+	 *		'action' => array('action' => function($params) {
+	 *			return Inflector::camelize(strtolower($params['action']), false);
+	 *		})
+	 * // ...
+	 * ```
 	 *
-	 * Dispatcher::config(array('rules' => array(
-	 * 	'action' => array('action' => function($params) {
-	 * 		return Inflector::camelize(strtolower($params['action']), false);
-	 * 	})
-	 * )));
-	 * }}}
-	 *
-	 * The rules can be a callback as well:
-	 *
-	 * {{{
-	 * Dispatcher::config(array('rules' => function($params) {
-	 * 	if (isset($params['admin'])) {
-	 * 		return array('special' => array('action' => 'special_{:action}'));
-	 * 	}
-	 * 	return array();
-	 * }));
-	 * }}}
+	 * The entires rules can become a callback as well:
+	 * ```
+	 * Dispatcher::config(array(
+	 *	'rules' => function($params) {
+	 *		// ...
+	 *	}
+	 * ));
+	 * ```
 	 *
 	 * @see lithium\action\Dispatcher::config()
 	 * @see lithium\util\String::insert()
+	 * @see lithium\util\Inflector
+	 * @var array
 	 */
 	protected static $_rules = array();
 
@@ -132,7 +144,7 @@ class Dispatcher extends \lithium\core\StaticObject {
 	 * @return mixed Returns the value returned from the callable object retrieved from
 	 *         `Dispatcher::_callable()`, which is either a string or an instance of
 	 *         `lithium\action\Response`.
-	 * @filter
+	 * @filter Allows to perform actions very early or late in the request.
 	 */
 	public static function run($request, array $options = array()) {
 		$router = static::$_classes['router'];
@@ -165,7 +177,6 @@ class Dispatcher extends \lithium\core\StaticObject {
 	 * @return array Returns the `$params` array with formatting rules applied to array values.
 	 */
 	public static function applyRules(&$params) {
-		$result = array();
 		$values = array();
 		$rules = static::$_rules;
 
@@ -200,18 +211,19 @@ class Dispatcher extends \lithium\core\StaticObject {
 			}
 			foreach ($value as $k => $v) {
 				if (is_callable($v)) {
-					$result[$k] = $v($values);
+					$values[$k] = $v($values);
 					continue;
 				}
 				$match = preg_replace('/\{:\w+\}/', '@', $v);
 				$match = preg_replace('/@/', '.+', preg_quote($match, '/'));
+
 				if (preg_match('/' . $match . '/i', $values[$k])) {
 					continue;
 				}
-				$result[$k] = String::insert($v, $values);
+				$values[$k] = String::insert($v, $values);
 			}
 		}
-		return $result + $values;
+		return $values;
 	}
 
 	/**

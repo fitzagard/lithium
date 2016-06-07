@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2012, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -25,7 +25,7 @@ class Docblock extends \lithium\core\StaticObject {
 	public static $tags = array(
 		'todo', 'discuss', 'fix', 'important', 'var',
 		'param', 'return', 'throws', 'see', 'link',
-		'task', 'dependencies', 'filter'
+		'task', 'dependencies', 'filter', 'deprecated'
 	);
 
 	/**
@@ -85,7 +85,6 @@ class Docblock extends \lithium\core\StaticObject {
 		}
 
 		if (isset($tags['param'])) {
-			$params = $tags['param'];
 			$tags['params'] = static::_params((array) $tags['param']);
 			unset($tags['param']);
 		}

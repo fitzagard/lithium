@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -19,8 +19,6 @@ class HelperTest extends \lithium\test\Unit {
 
 	/**
 	 * Tests that constructor parameters are properly assigned to protected properties.
-	 *
-	 * @return void
 	 */
 	public function testObjectConstructionWithParameters() {
 		$this->assertNull($this->helper->_context);
@@ -36,8 +34,6 @@ class HelperTest extends \lithium\test\Unit {
 	/**
 	 * Tests the default escaping for HTML output.  When implementing helpers that do not output
 	 * HTML/XML, the `escape()` method should be overridden accordingly.
-	 *
-	 * @return void
 	 */
 	public function testDefaultEscaping() {
 		$result = $this->helper->escape('<script>alert("XSS!");</script>');
@@ -63,8 +59,6 @@ class HelperTest extends \lithium\test\Unit {
 	/**
 	 * Tests unescaped values passed through the escape() method. Unescaped values
 	 * should be returned exactly the same as the original value.
-	 *
-	 * @return void
 	 */
 	public function testUnescapedValue() {
 		$value  = '<blockquote>"Thou shalt not escape!"</blockquote>';

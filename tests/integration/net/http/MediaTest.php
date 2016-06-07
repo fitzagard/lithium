@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -70,6 +70,8 @@ class MediaTest extends \lithium\test\Integration {
 			'template' => 'testTypeFile'
 		));
 		$this->assertEqual("Layout top.\nThis is a type test.Layout bottom.", $response->body());
+
+		Media::type('view-integration-test', false);
 	}
 }
 

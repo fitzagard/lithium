@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -16,7 +16,7 @@ use lithium\data\entity\Document;
 use lithium\data\collection\DocumentSet;
 use lithium\data\source\mongo_db\Schema;
 use lithium\data\source\mongo_db\Exporter;
-use lithium\tests\mocks\data\source\mongo_db\MockResult;
+use lithium\tests\mocks\data\source\MockResult;
 use lithium\tests\mocks\data\source\MockMongoPost;
 
 class ExporterTest extends \lithium\test\Unit {
@@ -56,7 +56,7 @@ class ExporterTest extends \lithium\test\Unit {
 				return is_string($v) && preg_match('/^[0-9a-f]{24}$/', $v) ? new MongoId($v) : $v;
 			},
 			'date' => function($v) {
-				$v = is_numeric($v) ? intval($v) : strtotime($v);
+				$v = is_numeric($v) ? (integer) $v : strtotime($v);
 				return !$v ? new MongoDate() : new MongoDate($v);
 			},
 			'regex'   => function($v) { return new MongoRegex($v); },
@@ -144,8 +144,14 @@ class ExporterTest extends \lithium\test\Unit {
 	}
 
 	public function testUpdateFromResourceLoading() {
-		$resource = new MockResult();
-		$doc = new DocumentSet(array('model' => $this->_model, 'result' => $resource));
+		$result = new MockResult(array(
+			'data' => array(
+				array('_id' => '4c8f86167675abfabdbf0300', 'title' => 'bar'),
+				array('_id' => '5c8f86167675abfabdbf0301', 'title' => 'foo'),
+				array('_id' => '6c8f86167675abfabdbf0302', 'title' => 'dib')
+			)
+		));
+		$doc = new DocumentSet(array('model' => $this->_model, 'result' => $result));
 		$this->assertEmpty(Exporter::get('update', $doc->export()));
 		$this->assertEqual('dib', $doc['6c8f86167675abfabdbf0302']->title);
 
@@ -316,8 +322,6 @@ class ExporterTest extends \lithium\test\Unit {
 
 	/**
 	 * Tests handling type values based on specified schema settings.
-	 *
-	 * @return void
 	 */
 	public function testTypeCasting() {
 		$time = time();
@@ -374,8 +378,6 @@ class ExporterTest extends \lithium\test\Unit {
 
 	/**
 	 * Tests handling type values of subdocument arrays based on specified schema settings.
-	 *
-	 * @return void
 	 */
 	public function testTypeCastingSubObjectArrays() {
 		$time = time();

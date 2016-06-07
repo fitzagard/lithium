@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -17,20 +17,20 @@ use lithium\core\ConfigException;
  * An example PHP file must contain a `return` statement which returns an array if the
  * the file is included.
  *
- * {{{
+ * ```
  * <?php
  * return array(
  * 	'postalCode' => '\d+',
  * 	'phone' => '\d+\-\d+'
  * );
  * ?>
- * }}}
+ * ```
  *
  * The adapter works with a directory structure below. The example shows the structure
  * for the directory as given by the `'path'` configuration setting. It is similar to
  * the one used by the the `Gettext` adapter.
  *
- * {{{
+ * ```
  * resources/g11n/php
  * ├── <locale>
  * |   ├── message
@@ -46,7 +46,7 @@ use lithium\core\ConfigException;
  * ├── validation_default.php
  * ├── validation_<scope>.php
  * └── ...
- * }}}
+ * ```
  *
  * @see lithium\g11n\catalog\adapter\Gettext
  */
@@ -57,6 +57,7 @@ class Php extends \lithium\g11n\catalog\Adapter {
 	 *
 	 * @param array $config Available configuration options are:
 	 *        - `'path'`: The path to the directory holding the data.
+	 * @return void
 	 */
 	public function __construct(array $config = array()) {
 		$defaults = array('path' => null);
@@ -92,7 +93,10 @@ class Php extends \lithium\g11n\catalog\Adapter {
 
 		if (file_exists($file)) {
 			foreach (require $file as $id => $translated) {
-				$data = $this->_merge($data, compact('id', 'translated'));
+				if (strpos($id, '|') !== false) {
+					list($id, $context) = explode('|', $id);
+				}
+				$data = $this->_merge($data, compact('id', 'translated', 'context'));
 			}
 		}
 		return $data;

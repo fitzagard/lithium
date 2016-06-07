@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -12,31 +12,31 @@ namespace lithium\test;
  * Mocker chain is used to aid in assertion of method calls.
  *
  * Asserting if `method1` was not called
- * {{{
+ * ```
  * $mock = new \lithium\tests\mocks\test\mockStdClass\Mock();
  * $this->assertFalse(Mocker::chain($mock)->called('method1')->success());
- * }}}
+ * ```
  *
  * Asserting if `method1` was called 2 times
- * {{{
+ * ```
  * $mock = new \lithium\tests\mocks\test\mockStdClass\Mock();
  * $this->assertTrue(Mocker::chain($mock)->called('method1')->eq(2)->success());
- * }}}
+ * ```
  *
  * Asserting if `method2` was called after `method1`
- * {{{
+ * ```
  * $mock = new \lithium\tests\mocks\test\mockStdClass\Mock();
  * $this->assertTrue(Mocker::chain($mock)->called('method1')->called('method2')->success());
- * }}}
+ * ```
  *
  * Asserting if `method2` was called after `method1`, and `method2` had specific arguments.
- * {{{
+ * ```
  * $mock = new \lithium\tests\mocks\test\mockStdClass\Mock();
  * $this->assertTrue(Mocker::chain($mock)
  * 	->called('method1')
  * 	->called('method2')->with('foo', 'bar')
  * 		->success());
- * }}}
+ * ```
  */
 class MockerChain extends \lithium\core\Object {
 
@@ -60,9 +60,10 @@ class MockerChain extends \lithium\core\Object {
 	);
 
 	/**
-	 * Saves the results from the mock.
+	 * Constructor. Saves the results from the mock.
 	 *
 	 * @param array $results Results from the mock
+	 * @return void
 	 */
 	public function __construct($results) {
 		$this->_data['results'] = $results;
@@ -117,11 +118,13 @@ class MockerChain extends \lithium\core\Object {
 	}
 
 	/**
-	 * Custom check to determine if our given magic methods can be responded to.
+	 * Determines if a given method can be called.
 	 *
-	 * @param  string  $method     Method name.
-	 * @param  bool    $internal   Interal call or not.
-	 * @return bool
+	 * @param string $method Name of the method.
+	 * @param boolean $internal Provide `true` to perform check from inside the
+	 *                class/object. When `false` checks also for public visibility;
+	 *                defaults to `false`.
+	 * @return boolean Returns `true` if the method can be called, `false` otherwise.
 	 */
 	public function respondsTo($method, $internal = false) {
 		$methodExists = in_array($method, array('gt', 'gte', 'lt', 'lte', 'eq'), true);

@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright	 Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright	 Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license	   http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -10,6 +10,7 @@ namespace lithium\tests\cases\core;
 
 use stdClass;
 use SplFileInfo;
+use Phar;
 use lithium\util\Inflector;
 use lithium\core\Libraries;
 use lithium\tests\mocks\core\MockInitMethod;
@@ -215,8 +216,9 @@ class LibrariesTest extends \lithium\test\Unit {
 	 * Tests that an exception is thrown when a library is added which could not be found.
 	 */
 	public function testAddInvalidLibrary() {
-		$this->expectException("Library `invalid_foo` not found.");
-		Libraries::add('invalid_foo');
+		$this->assertException("Library `invalid_foo` not found.", function() {
+			Libraries::add('invalid_foo');
+		});
 	}
 
 	/**
@@ -286,8 +288,10 @@ class LibrariesTest extends \lithium\test\Unit {
 	 * Tests the loading of libraries
 	 */
 	public function testLibraryLoad() {
-		$this->expectException('Failed to load class `SomeInvalidLibrary` from path ``.');
-		Libraries::load('SomeInvalidLibrary', true);
+		$expected = 'Failed to load class `SomeInvalidLibrary` from path ``.';
+		$this->assertException($expected, function() {
+			Libraries::load('SomeInvalidLibrary', true);
+		});
 	}
 
 	/**
@@ -411,8 +415,11 @@ EOD;
 	public function testServiceLocateInstantiation() {
 		$result = Libraries::instance('adapter.template.view', 'Simple');
 		$this->assertInstanceOf('lithium\template\view\adapter\Simple', $result);
-		$this->expectException("Class `Foo` of type `adapter.template.view` not found.");
-		$result = Libraries::instance('adapter.template.view', 'Foo');
+
+		$expected = "Class `Foo` of type `adapter.template.view` not found.";
+		$this->assertException($expected, function() {
+			Libraries::instance('adapter.template.view', 'Foo');
+		});
 	}
 
 	public function testServiceLocateAllCommands() {
@@ -569,7 +576,6 @@ EOD;
 		$this->assertTrue(count($result) > 3);
 		$this->assertNotIdentical(array_search('controller.txt.php', $result), false);
 		$this->assertNotIdentical(array_search('model.txt.php', $result), false);
-		$this->assertNotIdentical(array_search('plugin.phar.gz', $result), false);
 	}
 
 	public function testLocateWithDotSyntax() {
@@ -583,7 +589,6 @@ EOD;
 			'lithium\console\command\Create',
 			'lithium\console\command\G11n',
 			'lithium\console\command\Help',
-			'lithium\console\command\Library',
 			'lithium\console\command\Route',
 			'lithium\console\command\Test'
 		);
@@ -598,7 +603,6 @@ EOD;
 			'lithium\console\command\Create',
 			'lithium\console\command\G11n',
 			'lithium\console\command\Help',
-			'lithium\console\command\Library',
 			'lithium\console\command\Route',
 			'lithium\console\command\Test',
 			'lithium\console\command\g11n\Extract',
@@ -660,12 +664,19 @@ EOD;
 	 * Tests that `Libraries::realPath()` correctly resolves paths to files inside Phar archives.
 	 */
 	public function testPathsInPharArchives() {
-		$base = Libraries::get('lithium', 'path');
-		$path = realpath("{$base}/console/command/create/template/app.phar.gz");
+		$this->skipIf(!Phar::canWrite(), '`Phar support is read only.');
+		$path = realpath(Libraries::get(true, 'resources') . '/tmp/tests');
 
-		$expected = "phar://{$path}/controllers/HelloWorldController.php";
+		$file = $path . '/test.phar';
+		$phar = new Phar($file);
+		$phar->addFromString('/controllers/HelloWorldController.php', '<?php "Hello World" ?>');
+
+		$expected = "phar://{$file}/controllers/HelloWorldController.php";
 		$result = Libraries::realPath($expected);
 		$this->assertEqual($expected, $result);
+
+		unset($phar);
+		unlink($file);
 	}
 
 	public function testClassInstanceWithSubnamespace() {
@@ -776,8 +787,9 @@ EOD;
 	}
 
 	public function testDeprectatedInit() {
-		$this->expectException("/Deprecated/");
-		MockInitMethod::li3();
+		$this->assertException("/has been removed/i", function() {
+			MockInitMethod::li3();
+		});
 	}
 }
 

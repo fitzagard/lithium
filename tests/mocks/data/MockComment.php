@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -27,8 +27,7 @@ class MockComment extends \lithium\data\Model {
 		$self = static::_object();
 
 		$filter = function($self, $params) {
-			extract($params);
-			$query = new Query(array('type' => 'read') + $options);
+			$query = new Query(array('type' => 'read') + $params['options']);
 
 			return new RecordSet(array(
 				'query'    => $query,

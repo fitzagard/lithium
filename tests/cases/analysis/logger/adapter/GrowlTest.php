@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -11,6 +11,17 @@ namespace lithium\tests\cases\analysis\logger\adapter;
 use lithium\analysis\logger\adapter\Growl;
 
 class GrowlTest extends \lithium\test\Unit {
+
+	protected $_backup = array();
+
+	public function setUp() {
+		$this->_backup['error_reporting'] = error_reporting();
+		error_reporting(E_ALL);
+	}
+
+	public function tearDown() {
+		error_reporting($this->_backup['error_reporting']);
+	}
 
 	public function testGrowlWrite() {
 		$connection = fopen('php://memory', 'w+');
@@ -44,13 +55,13 @@ class GrowlTest extends \lithium\test\Unit {
 			'title' => 'Lithium log',
 			'port' => 0
 		));
-		$this->expectException('/^Growl connection failed/');
-		$this->expectException('/Failed to parse address/');
+		$this->assertException('/Failed to parse address/', function() use ($growl) {
+			$message = 'info: Test message.';
+			$params = compact('message') + array('priority' => 'info', 'options' => array());
 
-		$message = 'info: Test message.';
-		$params = compact('message') + array('priority' => 'info', 'options' => array());
-		$writer = $growl->write('info', $message, array());
-		$writer('lithium\analysis\Logger', $params, null);
+			$writer = $growl->write('info', $message, array());
+			$writer('lithium\analysis\Logger', $params, null);
+		});
 	}
 
 	public function testInvalidConnectionWithForcedRegistration() {
@@ -60,13 +71,13 @@ class GrowlTest extends \lithium\test\Unit {
 			'port' => 0,
 			'registered' => true
 		));
-		$this->expectException('/^Growl connection failed/');
-		$this->expectException('/Failed to parse address/');
+		$this->assertException('/Failed to parse address/', function() use ($growl) {
+			$message = 'info: Test message.';
+			$params = compact('message') + array('priority' => 'info', 'options' => array());
 
-		$message = 'info: Test message.';
-		$params = compact('message') + array('priority' => 'info', 'options' => array());
-		$writer = $growl->write('info', $message, array());
-		$writer('lithium\analysis\Logger', $params, null);
+			$writer = $growl->write('info', $message, array());
+			$writer('lithium\analysis\Logger', $params, null);
+		});
 	}
 
 	public function testStickyMessages() {

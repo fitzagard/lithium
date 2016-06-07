@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2009, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -29,6 +29,13 @@ class FormTest extends \lithium\test\Unit {
 		)));
 	}
 
+	public static function meta($key) {
+		switch ($key) {
+			case 'name':
+				return __CLASS__;
+		}
+	}
+
 	/**
 	 * Used by `testValidatorWithFieldMapping` and makes sure that the
 	 * custom password field name isn't sent in the query
@@ -50,13 +57,13 @@ class FormTest extends \lithium\test\Unit {
 	 * Tests a check for the model class prior to attempted use.
 	 */
 	public function testModel() {
-		$this->expectException("Model class 'ModelDoesNotExist' not found.");
-
-		$subject = new Form(array(
-			'model' => 'ModelDoesNotExist',
-			'fields' => array('username'),
-			'validators' => array('password' => false)
-		));
+		$this->assertException("Model class 'ModelDoesNotExist' not found.", function() {
+			$subject = new Form(array(
+				'model' => 'ModelDoesNotExist',
+				'fields' => array('username'),
+				'validators' => array('password' => false)
+			));
+		});
 	}
 
 	/**
@@ -136,9 +143,11 @@ class FormTest extends \lithium\test\Unit {
 		));
 
 		$request = (object) array('data' => array('username' => 'Test'));
+		$expected = 'Authentication filter for `username` is not callable.';
 
-		$this->expectException('Authentication filter for `username` is not callable.');
-		$subject->check($request);
+		$this->assertException($expected, function() use ($subject, $request) {
+			$subject->check($request);
+		});
 	}
 
 	public function testGenericFilter() {
@@ -194,9 +203,11 @@ class FormTest extends \lithium\test\Unit {
 		));
 
 		$request = (object) array('data' => array('username' => 'Test'));
+		$expected = 'Authentication filter is not callable.';
 
-		$this->expectException('Authentication filter is not callable.');
-		$subject->check($request);
+		$this->assertException($expected, function() use ($subject, $request) {
+			$subject->check($request);
+		});
 	}
 
 	/**
@@ -336,9 +347,11 @@ class FormTest extends \lithium\test\Unit {
 		));
 
 		$request = (object) array('data' => array('username' => 'Bob'));
+		$expected = 'Authentication validator for `password` is not callable.';
 
-		$this->expectException('Authentication validator for `password` is not callable.');
-		$subject->check($request);
+		$this->assertException($expected, function() use ($subject, $request) {
+			$subject->check($request);
+		});
 	}
 
 	public function testGenericValidator() {
@@ -368,9 +381,11 @@ class FormTest extends \lithium\test\Unit {
 		));
 
 		$request = (object) array('data' => array('username' => 'Bob'));
+		$expected = 'Authentication validator is not callable.';
 
-		$this->expectException('Authentication validator is not callable.');
-		$subject->check($request);
+		$this->assertException($expected, function() use ($subject, $request) {
+			$subject->check($request);
+		});
 	}
 
 	/**

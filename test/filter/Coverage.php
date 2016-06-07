@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -107,7 +107,6 @@ class Coverage extends \lithium\test\Filter {
 	 * @return array
 	 */
 	public static function collectLines($result) {
-		$output = null;
 		$aggregate = array('covered' => 0, 'executable' => 0);
 
 		foreach ($result as $class => $coverage) {
@@ -202,7 +201,7 @@ class Coverage extends \lithium\test\Filter {
 	 * aggregate line coverage density per file.
 	 *
 	 * @param array $runs An array containing multiple runs of raw XDebug coverage data, where
-	 *              each array key is a file name, and it's value is XDebug's coverage
+	 *              each array key is a file name, and its value is XDebug's coverage
 	 *              data for that file.
 	 * @param array $classMap An optional map with class names as array keys and corresponding file
 	 *              names as values. Used to filter the returned results, and will cause the array

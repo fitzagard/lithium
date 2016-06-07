@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 namespace lithium\console\command;
@@ -21,20 +21,20 @@ class Route extends \lithium\console\Command {
 	 * Override the default 'development' environment.
 	 *
 	 * For example:
-	 * {{{
+	 * ```sh
 	 * li3 route --env=production
 	 * li3 route show /foo --env=test
-	 * }}}
+	 * ```
 	 *
 	 * @var string
 	 */
 	public $env = 'development';
 
 	/**
-	 * Load the routes file and set the environment.
+	 * Constructor. Load the routes file and set the environment.
 	 *
-	 * @param array $config The default configuration, wherein the absolute path to the routes file
-	 *              to load may be specified, using the `'routes'` key.
+	 * @param array $config The default configuration, wherein the absolute path to the
+	 *        routes file to load may be specified, using the `'routes'` key.
 	 */
 	public function __construct($config = array()) {
 		$defaults = array('routes' => Libraries::get(true, 'path') . '/config/routes.php');
@@ -66,21 +66,21 @@ class Route extends \lithium\console\Command {
 	 * alias for the `show()` method.
 	 *
 	 * Example:
-	 * {{{
+	 * ```sh
 	 * li3 route
 	 * li3 route all
-	 * }}}
+	 * ```
 	 *
 	 * Will return an output similar to:
 	 *
-	 * {{{
+	 * ```
 	 * Template                        	Params
 	 * --------                        	------
 	 * /                               	{"controller":"pages","action":"view"}
 	 * /pages/{:args}                  	{"controller":"pages","action":"view"}
 	 * /{:slug:[\w\-]+}                	{"controller":"posts","action":"show"}
 	 * /{:controller}/{:action}/{:args}	{"action":"index"}
-	 * }}}
+	 * ```
 	 *
 	 * @return void
 	 */
@@ -100,21 +100,21 @@ class Route extends \lithium\console\Command {
 	 * method.
 	 *
 	 * Examples:
-	 * {{{
+	 * ```
 	 * 1: li3 route show /foo
 	 * 2: li3 route show post /foo/bar/1
 	 * 3: li3 route show /test
 	 * 4: li3 route show /test --env=production
-	 * }}}
+	 * ```
 	 *
 	 * Will return outputs similar to:
 	 *
-	 * {{{
+	 * ```
 	 * 1: {"controller":"foo","action":"index"	}
 	 * 2: {"controller":"foo","action":"bar","args":["1"]}
 	 * 3: {"controller":"lithium\\test\\Controller","action":"index"}
 	 * 4: {"controller":"test","action":"index"}
-	 * }}}
+	 * ```
 	 *
 	 * @return void
 	 */

@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -59,7 +59,7 @@ class Set {
 	 * Checks if a particular path is set in an array. Tests by key name, or dot-delimited key
 	 * name, i.e.:
 	 *
-	 * {{{ embed:lithium\tests\cases\util\SetTest::testCheck(1-4) }}}
+	 * ``` embed:lithium\tests\cases\util\SetTest::testCheck(1-4) ```
 	 *
 	 * @param mixed $data Data to check on.
 	 * @param mixed $path A dot-delimited string.
@@ -72,8 +72,8 @@ class Set {
 		$path = is_array($path) ? $path : explode('.', $path);
 
 		foreach ($path as $i => $key) {
-			if (is_numeric($key) && intval($key) > 0 || $key === '0') {
-				$key = intval($key);
+			if (is_numeric($key) && (integer) $key > 0 || $key === '0') {
+				$key = (integer) $key;
 			}
 			if ($i === count($path) - 1) {
 				return (is_array($data) && isset($data[$key]));
@@ -253,29 +253,23 @@ class Set {
 	 * @return array An array of matched items.
 	 */
 	public static function extract(array $data, $path = null, array $options = array()) {
+		$defaults = array('flatten' => true);
+		$options += $defaults;
+
 		if (!$data) {
 			return array();
 		}
-
-		if (is_string($data)) {
-			$tmp = $path;
-			$path = $data;
-			$data = $tmp;
-			unset($tmp);
-		}
-
 		if ($path === '/') {
 			return array_filter($data, function($data) {
 				return ($data === 0 || $data === '0' || !empty($data));
 			});
 		}
 		$contexts = $data;
-		$defaults = array('flatten' => true);
-		$options += $defaults;
 
 		if (!isset($contexts[0])) {
 			$contexts = array($data);
 		}
+
 		$tokens = array_slice(preg_split('/(?<!=)\/(?![a-z-]*\])/', $path), 1);
 
 		do {
@@ -352,7 +346,7 @@ class Set {
 						);
 					}
 				} elseif (
-					$key === $token || (ctype_digit($token) && $key == $token) || $token === '.'
+					$key === $token || (is_numeric($token) && $key == $token) || $token === '.'
 				) {
 					$context['trace'][] = $key;
 					$matches[] = array(
@@ -380,7 +374,7 @@ class Set {
 			if (empty($tokens)) {
 				break;
 			}
-		} while (1);
+		} while (true);
 
 		$r = array();
 
@@ -412,7 +406,7 @@ class Set {
 		$options += $defaults;
 		$result = array();
 
-		if (!is_null($options['path'])) {
+		if ($options['path'] !== null) {
 			$options['path'] .= $options['separator'];
 		}
 		foreach ($data as $key => $val) {
@@ -449,7 +443,7 @@ class Set {
 				continue;
 			}
 			list($path, $key) = explode($options['separator'], $key, 2);
-			$path = is_numeric($path) ? intval($path) : $path;
+			$path = is_numeric($path) ? (integer) $path : $path;
 			$result[$path][$key] = $val;
 		}
 		foreach ($result as $key => $value) {
@@ -532,8 +526,8 @@ class Set {
 		$_list =& $list;
 
 		foreach ($path as $i => $key) {
-			if (is_numeric($key) && intval($key) > 0 || $key === '0') {
-				$key = intval($key);
+			if (is_numeric($key) && (integer) $key > 0 || $key === '0') {
+				$key = (integer) $key;
 			}
 			if ($i === count($path) - 1) {
 				$_list[$key] = $data;
@@ -584,7 +578,7 @@ class Set {
 	 * @param integer $length
 	 * @return boolean
 	 */
-	public static function matches($data = array(), $conditions, $i = null, $length = null) {
+	public static function matches($data, $conditions, $i = null, $length = null) {
 		if (!$conditions) {
 			return true;
 		}
@@ -679,7 +673,12 @@ class Set {
 	/**
 	 * Normalizes a string or array list.
 	 *
-	 * @param mixed $list List to normalize.
+	 * ```
+	 * Set::normalize('foo,bar'); // returns array('foo' => null, 'bar' => null);
+	 * Set::normalize(array('foo', 'bar' => 'baz'); // returns array('foo' => null, 'bar' => 'baz');
+	 * ```
+	 *
+	 * @param string|array $list List to normalize.
 	 * @param boolean $assoc If `true`, `$list` will be converted to an associative array.
 	 * @param string $sep If `$list` is a string, it will be split into an array with `$sep`.
 	 * @param boolean $trim If `true`, separated strings will be trimmed.
@@ -740,8 +739,8 @@ class Set {
 		$_list =& $list;
 
 		foreach ($path as $i => $key) {
-			if (is_numeric($key) && intval($key) > 0 || $key === '0') {
-				$key = intval($key);
+			if (is_numeric($key) && (integer) $key > 0 || $key === '0') {
+				$key = (integer) $key;
 			}
 			if ($i === count($path) - 1) {
 				unset($_list[$key]);
@@ -768,7 +767,7 @@ class Set {
 			$stack = array();
 			foreach ((array) $results as $k => $r) {
 				$id = $k;
-				if (!is_null($key)) {
+				if ($key !== null) {
 					$id = $key;
 				}
 				if (is_array($r)) {
@@ -801,7 +800,7 @@ class Set {
 	 *
 	 * Usage examples:
 	 *
-	 * {{{ embed:lithium\tests\cases\util\SetTest::testSetSlice(1-4) }}}
+	 * ``` embed:lithium\tests\cases\util\SetTest::testSetSlice(1-4) ```
 	 *
 	 * @param array $subject Array that gets split apart
 	 * @param array|string $keys An array of keys or a single key as string

@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -19,12 +19,12 @@ use lithium\util\String;
  *
  * Example configuration:
  *
- * {{{
+ * ```
  * Session::config(array('default' => array(
  *    'adapter' => 'Cookie',
  *    'strategies' => array('Hmac' => array('secret' => 'foobar'))
  * )));
- * }}}
+ * ```
  *
  * This will configure the `HMAC` strategy to be used for all `Session` operations with the
  * `default` named configuration. A hash-based message authentication code (HMAC) will be
@@ -53,6 +53,7 @@ class Hmac extends \lithium\core\Object {
 	 *
 	 * @param array $config Configuration array. Will throw an exception if the 'secret'
 	 *        configuration key is not set.
+	 * @return void
 	 */
 	public function __construct(array $config = array()) {
 		if (!isset($config['secret'])) {
@@ -63,13 +64,14 @@ class Hmac extends \lithium\core\Object {
 
 	/**
 	 * Write strategy method.
+	 *
 	 * Adds an HMAC signature to the data. Note that this will transform the
 	 * passed `$data` to an array, and add a `__signature` key with the HMAC-calculated
 	 * value.
 	 *
 	 * @see lithium\storage\Session
 	 * @see lithium\core\Adaptable::config()
-	 * @link http://php.net/manual/en/function.hash-hmac.php PHP Manual: hash_hmac()
+	 * @link http://php.net/function.hash-hmac.php PHP Manual: hash_hmac()
 	 * @param mixed $data The data to be signed.
 	 * @param array $options Options for this method.
 	 * @return array Data & signature.
@@ -88,19 +90,26 @@ class Hmac extends \lithium\core\Object {
 
 	/**
 	 * Read strategy method.
-	 * Validates the HMAC signature of the stored data. If the signatures match, then
-	 * the data is safe, and the 'valid' key in the returned data will be
 	 *
-	 * If the store being read does not contain a `__signature` field, a `MissingSignatureException`
-	 * is thrown. When catching this exception, you may choose to handle it by either writing
-	 * out a signature (e.g. in cases where you know that no pre-existing signature may exist), or
-	 * you can blackhole it as a possible tampering attempt.
+	 * Validates the HMAC signature of the stored data. If the signatures match, then the data
+	 * is safe and will be passed through as-is.
 	 *
-	 * @param array $data the Data being read.
+	 * If the stored data being read does not contain a `__signature` field, a
+	 * `MissingSignatureException` is thrown. When catching this exception, you may choose
+	 * to handle it by either writing out a signature (e.g. in cases where you know that no
+	 * pre-existing signature may exist), or you can blackhole it as a possible tampering
+	 * attempt.
+	 *
+	 * @throws RuntimeException On possible data tampering.
+	 * @throws lithium\storage\session\strategy\MissingSignatureException On missing singature.
+	 * @param array $data The data being read.
 	 * @param array $options Options for this method.
-	 * @return array validated data
+	 * @return array Validated data.
 	 */
 	public function read($data, array $options = array()) {
+		if ($data === null) {
+			return $data;
+		}
 		$class = $options['class'];
 
 		$currentData = $class::read(null, array('strategies' => false));
@@ -108,14 +117,10 @@ class Hmac extends \lithium\core\Object {
 		if (!isset($currentData['__signature'])) {
 			throw new MissingSignatureException('HMAC signature not found.');
 		}
-		$currentSignature = $currentData['__signature'];
-		$signature = static::_signature($currentData);
-
-		if (!String::compare($signature, $currentSignature)) {
-			$message = "Possible data tampering: HMAC signature does not match data.";
-			throw new RuntimeException($message);
+		if (String::compare($currentData['__signature'], static::_signature($currentData))) {
+			return $data;
 		}
-		return $data;
+		throw new RuntimeException('Possible data tampering: HMAC signature does not match data.');
 	}
 
 	/**
@@ -123,7 +128,7 @@ class Hmac extends \lithium\core\Object {
 	 *
 	 * @see lithium\storage\Session
 	 * @see lithium\core\Adaptable::config()
-	 * @link http://php.net/manual/en/function.hash-hmac.php PHP Manual: hash_hmac()
+	 * @link http://php.net/function.hash-hmac.php PHP Manual: hash_hmac()
 	 * @param mixed $data The data to be signed.
 	 * @param array $options Options for this method.
 	 * @return array Data & signature.

@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2012, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -62,6 +62,8 @@ class Extract extends \lithium\console\Command {
 	 * @return array Returns the catalog specified. Returns boolean `false` when an error occurs.
 	 */
 	protected function _extract() {
+		$message = array();
+
 		$message[] = 'A `Catalog` class configuration with an adapter that is capable of';
 		$message[] = 'handling read requests for the `messageTemplate` category is needed';
 		$message[] = 'in order to proceed. This may also be referred to as `extractor`.';
@@ -89,9 +91,11 @@ class Extract extends \lithium\console\Command {
 	 * Prompts for data source and writes template.
 	 *
 	 * @param array $data Data to save.
-	 * @return void
+	 * @return boolean|void Return `false` if writing the catalog failed.
 	 */
 	protected function _writeTemplate($data) {
+		$message = array();
+
 		$message[] = 'In order to proceed you need to choose a `Catalog` configuration';
 		$message[] = 'which is used for writing the template. The adapter for the configuration';
 		$message[] = 'should be capable of handling write requests for the `messageTemplate`';

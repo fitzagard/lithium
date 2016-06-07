@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -687,6 +687,56 @@ class RouteTest extends \lithium\test\Unit {
 		$this->assertEqual("/posts", $url);
 	}
 
+	public function testRouteMatchParseSymmetryWithoutTrimming() {
+		$route = new Route(array(
+			'template' => '/{:language:(de|en)}/{:country:(DE|NL)}/home',
+			'params' => array('controller' => 'pages', 'action' => 'home'),
+			'defaults' => array(
+				'language' => 'de',
+				'country' => 'DE'
+			)
+		));
+
+		$params = array(
+			'controller' => 'pages', 'action' => 'home',
+			'language' => 'en', 'country' => 'DE'
+		);
+		$url = $route->match($params);
+
+		$this->assertEqual('/en/DE/home', $url);
+
+		$request = new Request();
+		$request->url = $url;
+
+		$result = $route->parse($request);
+		$this->assertEqual($params, $result->params);
+	}
+
+	public function testRouteMatchParseSymmetryWithRootTrimming() {
+		$route = new Route(array(
+			'template' => '/{:language:(de|en)}/{:country:(DE|NL)}',
+			'params' => array('controller' => 'pages', 'action' => 'home', 'country' => true),
+			'defaults' => array(
+				'language' => 'de',
+				'country' => 'DE'
+			)
+		));
+
+		$params = array(
+			'controller' => 'pages', 'action' => 'home',
+			'language' => 'en', 'country' => 'DE'
+		);
+		$url = $route->match($params);
+
+		$this->assertEqual('/en', $url);
+
+		$request = new Request();
+		$request->url = $url;
+
+		$result = $route->parse($request);
+		$this->assertEqual($params, $result->params);
+	}
+
 	public function testUrlEncodedArgs() {
 		$route = new Route(array(
 			'template' => '/{:controller}/{:action}/{:args}',
@@ -827,6 +877,45 @@ class RouteTest extends \lithium\test\Unit {
 
 		$nonDefault = array('controller' => 'Admin', 'action' => 'view');
 		$this->assertIdentical('/Admin/view', $route->match($nonDefault));
+	}
+
+	/**
+	 * Tests that routes with defaults keep their defaults, even when there
+	 * are keys in the route template.
+	 */
+	public function testDefaultsAreKept() {
+		$request = new Request();
+		$request->url = '/shop/pay/123';
+
+		$route = new Route(array(
+			'template' => '/shop/pay/{:uuid}',
+			'params' => array('controller' => 'orders', 'action' => 'pay'),
+			'defaults' => array('language' => 'de')
+		));
+		$result = $route->parse($request);
+		$this->assertArrayHasKey('language', $result->params);
+
+		$request = new Request();
+		$request->url = '/shop/pay/123';
+
+		$route = new Route(array(
+			'template' => '/shop/pay/{:uuid:[0-9]+}',
+			'params' => array('controller' => 'orders', 'action' => 'pay'),
+			'defaults' => array('language' => 'de')
+		));
+		$result = $route->parse($request);
+		$this->assertArrayHasKey('language', $result->params);
+
+		$request = new Request();
+		$request->url = '/shop/pay';
+
+		$route = new Route(array(
+			'template' => '/shop/pay',
+			'params' => array('controller' => 'orders', 'action' => 'pay'),
+			'defaults' => array('language' => 'de')
+		));
+		$result = $route->parse($request);
+		$this->assertArrayHasKey('language', $result->params);
 	}
 
 	public function testRouteParsingWithRegexAction() {

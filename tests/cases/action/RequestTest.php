@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -12,10 +12,6 @@ use lithium\core\Libraries;
 use lithium\action\Request;
 
 class RequestTest extends \lithium\test\Unit {
-
-	protected $_library = null;
-
-	protected $_docroot = null;
 
 	protected $_superglobals = array('_GET', '_POST', '_SERVER', '_ENV');
 
@@ -76,17 +72,6 @@ class RequestTest extends \lithium\test\Unit {
 	);
 
 	public function setUp() {
-		$resources = Libraries::get(true, 'resources') . '/tmp/tests';
-		$this->skipIf(!is_writable($resources), "Can't write to resources directory.");
-		$app = $resources . '/www/lithium/app';
-		mkdir($app, 0777, true);
-
-		$this->_library = Libraries::get(true);
-		Libraries::remove($this->_library['name']);
-
-		Libraries::add('app', array('path' => $app, 'default' => true));
-		$this->_docroot = $resources . '/www';
-
 		foreach ($this->_superglobals as $varname) {
 			$this->_env[$varname] = $GLOBALS[$varname];
 			unset($GLOBALS[$varname]);
@@ -97,9 +82,6 @@ class RequestTest extends \lithium\test\Unit {
 		foreach ($this->_superglobals as $varname) {
 			$GLOBALS[$varname] = $this->_env[$varname];
 		}
-		Libraries::remove('app');
-		Libraries::add($this->_library['name'], $this->_library);
-		$this->_cleanUp();
 	}
 
 	public function testInitData() {
@@ -339,7 +321,7 @@ class RequestTest extends \lithium\test\Unit {
 
 	public function testBaseWithDirectory() {
 		$request = new Request(array('env' => array(
-			'DOCUMENT_ROOT' => $this->_docroot,
+			'DOCUMENT_ROOT' => '/www',
 			'PHP_SELF' => '/lithium/app/webroot/index.php',
 			'REQUEST_URI' => '/lithium/hello/world'
 		)));
@@ -348,7 +330,7 @@ class RequestTest extends \lithium\test\Unit {
 
 	public function testRequestWithColon() {
 		$request = new Request(array('env' => array(
-			'DOCUMENT_ROOT' => $this->_docroot,
+			'DOCUMENT_ROOT' => '/www',
 			'PHP_SELF' => '/lithium/app/webroot/index.php',
 			'REQUEST_URI' => '/lithium/pages/lithium/test:a'
 		)));
@@ -356,7 +338,7 @@ class RequestTest extends \lithium\test\Unit {
 		$this->assertEqual('/pages/lithium/test:a', $request->url);
 
 		$request = new Request(array('env' => array(
-			'DOCUMENT_ROOT' => $this->_docroot,
+			'DOCUMENT_ROOT' => '/www',
 			'PHP_SELF' => '/lithium/app/webroot/index.php',
 			'REQUEST_URI' => '/lithium/pages/lithium/test:1'
 		)));
@@ -366,7 +348,7 @@ class RequestTest extends \lithium\test\Unit {
 
 	public function testRequestWithoutUrlQueryParamAndNoApp() {
 		$request = new Request(array('env' => array(
-			'DOCUMENT_ROOT' => $this->_docroot,
+			'DOCUMENT_ROOT' => '/www',
 			'PHP_SELF' => '/lithium/webroot/index.php',
 			'REQUEST_URI' => '/lithium/'
 		)));
@@ -376,7 +358,7 @@ class RequestTest extends \lithium\test\Unit {
 
 	public function testRequestWithoutUrlQueryParamAndNoAppOrWebroot() {
 		$request = new Request(array('env' => array(
-			'DOCUMENT_ROOT' => $this->_docroot,
+			'DOCUMENT_ROOT' => '/www',
 			'PHP_SELF' => '/lithium/index.php',
 			'REQUEST_URI' => '/lithium/'
 		)));
@@ -386,7 +368,7 @@ class RequestTest extends \lithium\test\Unit {
 
 	public function testBaseWithAppAndOtherDirectory() {
 		$request = new Request(array('env' => array(
-			'DOCUMENT_ROOT' => $this->_docroot,
+			'DOCUMENT_ROOT' => '/www',
 			'PHP_SELF' => '/lithium/app/other/webroot/index.php'
 		)));
 		$this->assertEqual('/lithium/app/other', $request->env('base'));
@@ -418,7 +400,7 @@ class RequestTest extends \lithium\test\Unit {
 
 	public function testGetMethod() {
 		$request = new Request(array('env' => array(
-			'DOCUMENT_ROOT' => $this->_docroot,
+			'DOCUMENT_ROOT' => '/www',
 			'PHP_SELF' => '/lithium/app/webroot/index.php',
 			'HTTP_ACCEPT' => 'text/html,application/xml,image/png,*/*',
 			'HTTP_ACCEPT_LANGUAGE' => 'da, en-gb;q=0.8, en;q=0.7'
@@ -1147,6 +1129,45 @@ class RequestTest extends \lithium\test\Unit {
 		$this->assertEqual($expected, $request->accepts(true));
 	}
 
+	public function testAcceptWithTypeParam() {
+		$request = new Request(array('env' => array(
+			'HTTP_ACCEPT' => 'application/json'
+		)));
+		$this->assertFalse($request->accepts('text'));
+		$this->assertTrue($request->accepts('json'));
+		$this->assertFalse($request->accepts('html'));
+	}
+
+	public function testAcceptWithTypeParamFallbackHtml() {
+		$request = new Request(array('env' => array(
+			'HTTP_ACCEPT' => 'nothing/matches'
+		)));
+		$this->assertFalse($request->accepts('json'));
+		$this->assertTrue($request->accepts('html'));
+
+		$request = new Request(array('env' => array(
+			'HTTP_ACCEPT' => 'application/json'
+		)));
+		$this->assertFalse($request->accepts('text'));
+		$this->assertTrue($request->accepts('json'));
+		$this->assertFalse($request->accepts('html'));
+	}
+
+	public function testAcceptForBothXmlWithAliasedHtml() {
+		$request = new Request(array('env' => array(
+			'HTTP_ACCEPT' => 'application/xml'
+		)));
+		$this->assertTrue($request->accepts('xml'));
+		$this->assertFalse($request->accepts('html'));
+	}
+
+	public function testAcceptDoesNotAccepFullNamespacedType() {
+		$request = new Request(array('env' => array(
+			'HTTP_ACCEPT' => 'application/json'
+		)));
+		$this->assertFalse($request->accepts('application/json'));
+	}
+
 	public function testParsingAcceptHeader() {
 		$chrome = array(
 			'application/xml',
@@ -1314,7 +1335,7 @@ class RequestTest extends \lithium\test\Unit {
 	public function testConvertToStringWithPost() {
 		$request = new Request(array(
 			'env' => array(
-				'HTTP_HOST' => 'lithify.me',
+				'HTTP_HOST' => 'li3.me',
 				'CONTENT_TYPE' => 'application/x-www-form-urlencoded',
 				'HTTP_USER_AGENT' => 'Mozilla/5.0'
 			),
@@ -1324,7 +1345,7 @@ class RequestTest extends \lithium\test\Unit {
 
 		$expected = join("\r\n", array(
 			'GET /posts HTTP/1.1',
-			'Host: lithify.me',
+			'Host: li3.me',
 			'Connection: Close',
 			'User-Agent: Mozilla/5.0',
 			'Content-Type: application/x-www-form-urlencoded',
@@ -1337,7 +1358,7 @@ class RequestTest extends \lithium\test\Unit {
 	public function testConvertToStringWithJson() {
 		$expected = join("\r\n", array(
 			'GET /posts HTTP/1.1',
-			'Host: lithify.me',
+			'Host: li3.me',
 			'Connection: Close',
 			'User-Agent: Mozilla/5.0',
 			'Content-Type: application/json',
@@ -1347,7 +1368,7 @@ class RequestTest extends \lithium\test\Unit {
 
 		$request = new Request(array(
 			'env' => array(
-				'HTTP_HOST' => 'lithify.me',
+				'HTTP_HOST' => 'li3.me',
 				'CONTENT_TYPE' => 'application/json',
 				'HTTP_USER_AGENT' => 'Mozilla/5.0'
 			),
@@ -1359,7 +1380,7 @@ class RequestTest extends \lithium\test\Unit {
 
 		$request = new Request(array(
 			'env' => array(
-				'HTTP_HOST' => 'lithify.me',
+				'HTTP_HOST' => 'li3.me',
 				'CONTENT_TYPE' => 'application/json',
 				'HTTP_USER_AGENT' => 'Mozilla/5.0'
 			),
@@ -1374,17 +1395,19 @@ class RequestTest extends \lithium\test\Unit {
 	 * Tests that the HTTP request method set by `Request` from the server information is not
 	 * overwritten in a parent class.
 	 */
-	public function testRequesMethodConfiguration() {
+	public function testRequestMethodConfiguration() {
 		$request = new Request(array('env' => array('REQUEST_METHOD' => 'POST')));
 		$this->assertEqual('POST', $request->method);
+		$this->assertTrue($request->is('post'));
 
 		$request = new Request(array('env' => array('REQUEST_METHOD' => 'PATCH')));
 		$this->assertEqual('PATCH', $request->method);
+		$this->assertTrue($request->is('patch'));
 	}
 
 	public function testRequestUriWithHtAccessRedirection() {
 		$request = new Request(array('env' => array(
-			'DOCUMENT_ROOT' => $this->_docroot,
+			'DOCUMENT_ROOT' => '/www',
 			'REQUEST_URI' => '/lithium/hello/world?page=1',
 			'PHP_SELF' => '/lithium/app/webroot/index.php'
 		)));
@@ -1395,7 +1418,7 @@ class RequestTest extends \lithium\test\Unit {
 
 	public function testRequestUriWithNoHtAccessRedirection() {
 		$request = new Request(array('env' => array(
-			'DOCUMENT_ROOT' => $this->_docroot,
+			'DOCUMENT_ROOT' => '/www',
 			'REQUEST_URI' => '/lithium/app/webroot/hello/world?page=1',
 			'PHP_SELF' => '/lithium/app/webroot/index.php'
 		)));
@@ -1406,7 +1429,7 @@ class RequestTest extends \lithium\test\Unit {
 
 	public function testRequestUriWithVirtualHost() {
 		$request = new Request(array('env' => array(
-			'DOCUMENT_ROOT' => $this->_docroot . '/lithium/app/webroot',
+			'DOCUMENT_ROOT' => '/www/lithium/app/webroot',
 			'REQUEST_URI' => '/hello/world?page=1',
 			'PHP_SELF' => '/index.php'
 		)));
@@ -1417,7 +1440,7 @@ class RequestTest extends \lithium\test\Unit {
 
 	public function testRequestUriWithAdminRoute() {
 		$request = new Request(array('env' => array(
-			'DOCUMENT_ROOT' => $this->_docroot . '/lithium/app/webroot',
+			'DOCUMENT_ROOT' => '/www/lithium/app/webroot',
 			'REQUEST_URI' => '/lithium/admin/hello/world?page=1',
 			'PHP_SELF' => '/lithium/app/webroot/index.php'
 		)));
@@ -1428,7 +1451,7 @@ class RequestTest extends \lithium\test\Unit {
 
 	public function testRequestWithNoGlobals() {
 		$_SERVER = array('env' => array(
-			'DOCUMENT_ROOT' => $this->_docroot,
+			'DOCUMENT_ROOT' => '/www',
 			'HTTP_HOST' => 'foo.com',
 			'HTTPS' => 'on',
 			'SERVER_PROTOCOL' => 'HTTP/1.0',
@@ -1447,7 +1470,7 @@ class RequestTest extends \lithium\test\Unit {
 
 	public function testRequestWithEnvVariables() {
 		$request = new Request(array('env' => array(
-			'DOCUMENT_ROOT' => $this->_docroot,
+			'DOCUMENT_ROOT' => '/www',
 			'HTTP_HOST' => 'foo.com',
 			'HTTPS' => 'on',
 			'SERVER_PROTOCOL' => 'HTTP/1.0',

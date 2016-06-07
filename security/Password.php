@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -48,7 +48,7 @@ class Password {
 	 *
 	 * Usage:
 	 *
-	 * {{{
+	 * ```
 	 * // Hash a password before storing it:
 	 * $hashed  = Password::hash($password);
 	 *
@@ -67,7 +67,7 @@ class Password {
 	 * $hashed2 = Password::hash($password, $salt2); // Slow
 	 * $check1  = Password::check($password, $hashed1); // True
 	 * $check2  = Password::check($password, $hashed2); // True
-	 * }}}
+	 * ```
 	 *
 	 * @see lithium\security\Password::check()
 	 * @see lithium\security\Password::salt()
@@ -90,12 +90,12 @@ class Password {
 	 *
 	 * @see lithium\security\Password::hash()
 	 * @see lithium\security\Password::salt()
-	 * @param string $password The password to check.
-	 * @param string $hash The hashed password to compare it to.
+	 * @param string $password The user-supplied plaintext password to check.
+	 * @param string $hash The known hashed password to compare it to.
 	 * @return boolean Returns a boolean indicating whether the password is correct.
 	 */
 	public static function check($password, $hash) {
-		return String::compare(crypt($password, $hash), $hash);
+		return String::compare($hash, crypt($password, $hash));
 	}
 
 	/**
@@ -126,7 +126,7 @@ class Password {
 	 * consisting in random sequences of alpha numeric characters, use
 	 * `lithium\util\String::random()` instead.
 	 *
-	 * @link http://php.net/manual/en/function.crypt.php
+	 * @link http://php.net/function.crypt.php
 	 * @link http://www.postgresql.org/docs/9.0/static/pgcrypto.html
 	 * @see lithium\security\Password::hash()
 	 * @see lithium\security\Password::check()
@@ -146,11 +146,11 @@ class Password {
 	public static function salt($type = null, $count = null) {
 		switch (true) {
 			case CRYPT_BLOWFISH === 1 && (!$type || $type === 'bf'):
-				return static::_genSaltBf($count);
+				return static::_generateSaltBf($count);
 			case CRYPT_EXT_DES === 1 && (!$type || $type === 'xdes'):
-				return static::_genSaltXDES($count);
+				return static::_generateSaltXdes($count);
 			default:
-				return static::_genSaltMD5();
+				return static::_generateSaltMd5();
 		}
 	}
 
@@ -163,7 +163,7 @@ class Password {
 	 *        Defaults to `10`. Can be `4` to `31`.
 	 * @return string The Blowfish salt.
 	 */
-	protected static function _genSaltBf($count = null) {
+	protected static function _generateSaltBf($count = null) {
 		$count = (integer) $count;
 		$count = ($count < 4 || $count > 31) ? static::BF : $count;
 
@@ -209,7 +209,7 @@ class Password {
 	 *                ensure we don't use a weak DES key.
 	 * @return string The XDES salt.
 	 */
-	protected static function _genSaltXDES($count = null) {
+	protected static function _generateSaltXdes($count = null) {
 		$count = (integer) $count;
 		$count = ($count < 1 || $count > 24) ? static::XDES : $count;
 
@@ -228,7 +228,7 @@ class Password {
 	 *
 	 * @return string The MD5 salt.
 	 */
-	protected static function _genSaltMD5() {
+	protected static function _generateSaltMd5() {
 		return '$1$' . String::random(6, array('encode' => String::ENCODE_BASE_64));
 	}
 }

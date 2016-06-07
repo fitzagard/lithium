@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -90,8 +90,6 @@ class SessionTest extends \lithium\test\Unit {
 
 	/**
 	 * Tests a scenario where no session handler is available that matches the passed parameters.
-	 *
-	 * @return void
 	 */
 	public function testUnhandledWrite() {
 		Session::config(array(
@@ -103,8 +101,6 @@ class SessionTest extends \lithium\test\Unit {
 
 	/**
 	 * Tests deleting a session key from one or all adapters.
-	 *
-	 * @return void
 	 */
 	public function testSessionKeyCheckAndDelete() {
 		Session::config(array(
@@ -138,8 +134,6 @@ class SessionTest extends \lithium\test\Unit {
 
 	/**
 	 * Tests clearing all session data from one or all adapters.
-	 *
-	 * @return void
 	 */
 	public function testSessionClear() {
 		Session::config(array(
@@ -181,8 +175,9 @@ class SessionTest extends \lithium\test\Unit {
 	public function testSessionState() {
 		$this->assertTrue(Session::isStarted());
 		$this->assertTrue(Session::isStarted('default'));
-		$this->expectException("Configuration `invalid` has not been defined.");
-		$this->assertFalse(Session::isStarted('invalid'));
+		$this->assertException("Configuration `invalid` has not been defined.", function() {
+			Session::isStarted('invalid');
+		});
 	}
 
 	public function testSessionStateReset() {
@@ -192,8 +187,9 @@ class SessionTest extends \lithium\test\Unit {
 
 	public function testSessionStateResetNamed() {
 		Session::reset();
-		$this->expectException("Configuration `default` has not been defined.");
-		$this->assertFalse(Session::isStarted('default'));
+		$this->assertException("Configuration `default` has not been defined.", function() {
+			Session::isStarted('default');
+		});
 	}
 
 	public function testReadFilter() {
@@ -306,6 +302,24 @@ class SessionTest extends \lithium\test\Unit {
 		$this->assertEqual($encrypted, $result);
 		$result = $encrypt->decrypt($encrypted);
 		$this->assertEqual($savedData, $result);
+	}
+
+	public function testHmacStrategyOnNonExistKey() {
+		Session::config(array('primary' => array(
+			'adapter' => new Memory(),
+			'strategies' => array(
+				'Hmac' => array(
+					'secret' => 's3cr3t'
+				)
+			)
+		)));
+
+		$this->assertEmpty(Session::read('test'));
+
+		Session::write('test', 'value');
+		$result = Session::read('test');
+		$expected = 'value';
+		$this->assertEqual($expected, $result);
 	}
 }
 

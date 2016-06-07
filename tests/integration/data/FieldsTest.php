@@ -1,4 +1,10 @@
 <?php
+/**
+ * Lithium: the most rad php framework
+ *
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
+ * @license       http://opensource.org/licenses/bsd-license.php The BSD License
+ */
 
 namespace lithium\tests\integration\data;
 
@@ -19,7 +25,7 @@ class FieldsTest extends \lithium\tests\integration\data\Base {
 	public function skip() {
 		parent::connect($this->_connection);
 		if (!class_exists('li3_fixtures\test\Fixtures')) {
-			$this->skipIf(true, "These tests need `'li3_fixtures'` to be runned.");
+			$this->skipIf(true, 'Need `li3_fixtures` to run tests.');
 		}
 		$this->skipIf($this->with(array('CouchDb')));
 	}

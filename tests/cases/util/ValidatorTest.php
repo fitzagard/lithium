@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -79,8 +79,9 @@ class ValidatorTest extends \lithium\test\Unit {
 		$this->assertTrue(in_array('foo', Validator::rules()));
 		$this->assertEqual('/^foo$/', Validator::rules('foo'));
 
-		$this->expectException("Rule `bar` is not a validation rule.");
-		$this->assertNull(Validator::isBar('foo'));
+		$this->assertException("Rule `bar` is not a validation rule.", function() {
+			Validator::isBar('foo');
+		});
 	}
 
 	/**
@@ -159,7 +160,7 @@ class ValidatorTest extends \lithium\test\Unit {
 	/**
 	 * Tests the regular expression validation for various regex delimiters
 	 *
-	 * @link http://www.php.net/manual/en/regexp.reference.delimiters.php Regex Delimiters
+	 * @link http://php.net/regexp.reference.delimiters.php Regex Delimiters
 	 */
 	public function testIsRegex() {
 		$this->assertTrue(Validator::isRegex('/^123$/'));
@@ -959,7 +960,7 @@ class ValidatorTest extends \lithium\test\Unit {
 	}
 
 	public function testCheckHasErrors() {
-		$rules = array('title' => array('please enter a title'));
+		$rules = array('title' => 'please enter a title');
 		$result = Validator::check(array(), $rules);
 		$this->assertNotEmpty($result);
 
@@ -970,6 +971,20 @@ class ValidatorTest extends \lithium\test\Unit {
 	public function testCheckPasses() {
 		$rules = array('title' => 'please enter a title');
 		$data = array('title' => 'new title');
+		$result = Validator::check($data, $rules);
+		$this->assertEmpty($result);
+	}
+
+	public function testRuleFormatMessageOnly() {
+		$rules = array('title' => 'please enter a title');
+		$data = array();
+
+		$expected = array('title' => array('please enter a title'));
+		$result = Validator::check($data, $rules);
+		$this->assertEqual($expected, $result);
+
+		$data = array('title' => 'new title');
+
 		$result = Validator::check($data, $rules);
 		$this->assertEmpty($result);
 	}
@@ -995,6 +1010,15 @@ class ValidatorTest extends \lithium\test\Unit {
 		$this->assertNotEmpty($result);
 	}
 
+	/**
+	 * Verifies that if validating with _any_, any format for
+	 * a rule will match. See issue #888 for more information.
+	 */
+	public function testCheckAny() {
+		$this->assertTrue(Validator::isCreditCard('4242424242424242', 'visa'));
+		$this->assertTrue(Validator::isCreditCard('4242424242424242'));
+	}
+
 	public function testCheckMultipleHasErrors() {
 		$rules = array(
 			'title' => 'please enter a title',
@@ -1015,7 +1039,7 @@ class ValidatorTest extends \lithium\test\Unit {
 
 	public function testCheckWithLastRule() {
 		$rules = array(
-			'title' => array('please enter a title'),
+			'title' => 'please enter a title',
 			'email' => array(
 				array('notEmpty', 'message' => 'email is empty', 'last' => true),
 				array('email', 'message' => 'email is invalid')
@@ -1025,7 +1049,7 @@ class ValidatorTest extends \lithium\test\Unit {
 		$this->assertNotEmpty($result);
 
 		$expected = array(
-			'title' => array('title is empty'),
+			'title' => array('please enter a title'),
 			'email' => array('email is empty')
 		);
 		$this->assertEqual($expected, $result);
@@ -1211,7 +1235,6 @@ class ValidatorTest extends \lithium\test\Unit {
 		$this->assertTrue(Validator::respondsTo('isCreditCard'));
 		$this->assertFalse(Validator::respondsTo('isFoobar'));
 	}
-
 }
 
 ?>

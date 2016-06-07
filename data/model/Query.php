@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -129,17 +129,17 @@ class Query extends \lithium\core\Object {
 	protected $_built = false;
 
 	/**
-	 * Class constructor, which initializes the default values this object supports.
-	 * Even though only a specific list of configuration parameters is available
-	 * by default, the `Query` object uses the `__call()` method to implement
-	 * automatic getters and setters for any arbitrary piece of data.
+	 * Constructor, which initializes the default values this object supports. Even though only
+	 * a specific list of configuration parameters is available by default, the `Query` object
+	 * uses the `__call()` method to implement automatic getters and setters for any arbitrary
+	 * piece of data.
 	 *
-	 * This means that any information may be passed into the constructor may be
-	 * used by the backend data source executing the query (or ignored, if support
-	 * is not implemented). This is useful if, for example, you wish to extend a
-	 * core data source and implement custom fucntionality.
+	 * This means that any information may be passed into the constructor may be used by the
+	 * backend data source executing the query (or ignored, if support is not implemented).
+	 * This is useful if, for example, you wish to extend a core data source and implement
+	 * custom functionality.
 	 *
-	 * @param array $config Config options:
+	 * @param array $config Available configuration options are:
 	 *        - `'type'` _string_: The type of the query (`read`, `create`, `update`, `delete`).
 	 *        - `'mode'` _string_: `JOIN` mode for a join query.
 	 *        - `'entity'` _object_: The base entity to query on. If set `'model'` is optionnal.
@@ -165,6 +165,7 @@ class Query extends \lithium\core\Object {
 	 *        - `'comment'` _string_: Comment for the query.
 	 *        - `'map'` _object_: Unnecessary if `model` is set.
 	 *        - `'relationships'` _array_: Unnecessary if `model` is set.
+	 * @return void
 	 */
 	public function __construct(array $config = array()) {
 		$defaults = array(
@@ -197,33 +198,28 @@ class Query extends \lithium\core\Object {
 
 	protected function _init() {
 		parent::_init();
-		$keys = array_keys($this->_config);
+
 		foreach ($this->_initializers as $key) {
-			$val = $this->_config[$key];
-			if ($val !== null) {
-				$this->_config[$key] = is_array($val) ? array() : null;
-				$this->{$key}($val);
+			if (($value = $this->_config[$key]) !== null) {
+				$this->_config[$key] = is_array($value) ? array() : null;
+				$this->{$key}($value);
 			}
 		}
 		if ($list = $this->_config['whitelist']) {
 			$this->_config['whitelist'] = array_combine($list, $list);
 		}
-
 		if ($this->_entity && !$this->_config['model']) {
 			$this->model($this->_entity->model());
 		}
-
 		if ($this->_config['with']) {
 			if (!$model = $this->model()) {
 				throw new ConfigException("The `'with'` option needs a valid binded model.");
 			}
 			$this->_config['with'] = Set::normalize($this->_config['with']);
 		}
-
 		if ($model = $this->model()) {
 			$this->alias($this->_config['alias'] ?: $model::meta('name'));
 		}
-
 		$this->fields($this->_config['fields']);
 
 		unset($this->_config['entity'], $this->_config['init']);
@@ -259,11 +255,13 @@ class Query extends \lithium\core\Object {
 	}
 
 	/**
-	 * Set and get method for the model associated with the `Query`.
-	 * Will also set the source table, i.e. `$this->_config['source']`.
+	 * Set or get the associated model.
 	 *
-	 * @param string $model
-	 * @return string
+	 * Will also set the source table, i.e. `$this->_config['source']` when setting the model.
+	 *
+	 * @param string|null $model Name of model to use, or `null` to retrieve current one.
+	 * @return string|Query Either the current model name in use when $model is `null`,
+	 *         or the query itself when setting the model name.
 	 */
 	public function model($model = null) {
 		if (!$model) {
@@ -271,40 +269,45 @@ class Query extends \lithium\core\Object {
 		}
 		$this->_config['model'] = $model;
 		$this->_config['source'] = $this->_config['source'] ?: $model::meta('source');
+
 		return $this;
 	}
 
 	/**
-	 * Set and get method for conditions.
+	 * Set or append to existing conditions, or get current conditions.
 	 *
-	 * If no conditions are set in query, it will ask the bound entity for condition array.
+	 * When getting current conditions and none are configured for the query,
+	 * will ask the bound entity for its conditions instead.
 	 *
-	 * @param mixed $conditions String or array to append to existing conditions.
-	 * @return array Returns an array of all conditions applied to this query.
+	 * @param string|array|null $conditions Condition/s to append to existing conditions.
+	 *        Provide `null` to get current conditions.
+	 * @return string|Query Either the currrent conditions when $conditions is
+	 *         `null` or the query itself when setting the conditions.
 	 */
 	public function conditions($conditions = null) {
 		if (!$conditions) {
 			return $this->_config['conditions'] ?: $this->_entityConditions();
 		}
-		$conditions = (array) $conditions;
-		$this->_config['conditions'] = (array) $this->_config['conditions'];
-		$this->_config['conditions'] = array_merge($this->_config['conditions'], $conditions);
+		$this->_config['conditions'] = array_merge(
+			(array) $this->_config['conditions'], (array) $conditions
+		);
 		return $this;
 	}
 
 	/**
-	 * Set and get method for havings.
+	 * Set and get _having_.
 	 *
 	 * @param mixed $having String or array to append to existing having.
-	 * @return array Returns an array of all having applied to this query.
+	 * @return string|Query Either the currrent _having_ when $having is
+	 *         `null` or the query itself when setting _having_.
 	 */
 	public function having($having = null) {
 		if (!$having) {
 			return $this->_config['having'];
 		}
-		$having = (array) $having;
-		$this->_config['having'] = (array) $this->_config['having'];
-		$this->_config['having'] = array_merge($this->_config['having'], $having);
+		$this->_config['having'] = array_merge(
+			(array) $this->_config['having'], (array) $having
+		);
 		return $this;
 	}
 
@@ -312,19 +315,17 @@ class Query extends \lithium\core\Object {
 	 * Set, get or reset fields option for query.
 	 *
 	 * Usage:
-	 * {{{
+	 * ```
 	 * // to add a field
 	 * $query->fields('created');
-	 * }}}
-	 * {{{
+	 *
 	 * // to add several fields
 	 * $query->fields(array('title','body','modified'));
-	 * }}}
-	 * {{{
+	 *
 	 * // to reset fields to none
 	 * $query->fields(false);
 	 * // should be followed by a 2nd call to fields with required fields
-	 * }}}
+	 * ```
 	 *
 	 * @param mixed $fields string, array or `false`
 	 * @param boolean $overwrite If `true`, existing fields will be removed before adding `$fields`.
@@ -340,13 +341,12 @@ class Query extends \lithium\core\Object {
 		if (!$fields) {
 			return $this;
 		}
-		$fields = is_array($fields) ? $fields : array($fields);
-		foreach ($fields as $key => $field) {
+		foreach ((array) $fields as $key => $field) {
 			if (is_string($field)) {
 				$this->_fields[1][$field] = true;
 			} elseif (is_array($field) && !is_numeric($key)) {
-				foreach ($field as &$val) {
-					$val = $key . '.' . $val;
+				foreach ($field as &$value) {
+					$value = "{$key}.{$value}";
 				}
 				$this->fields($field);
 			} else {
@@ -357,14 +357,16 @@ class Query extends \lithium\core\Object {
 	}
 
 	/**
-	 * Set and get method for query's limit of amount of records to return
+	 * Set or get the limit for the amount of results to return.
 	 *
-	 * @param integer $limit
-	 * @return integer
+	 * @param integer|boolean $limit An integer indicating the number of results to limit or
+	 *        `false` to employ no limit at all. Or `null` to retrieve the current limit.
+	 * @return integer|null|Query Either the currrent limit when $limit is
+	 *         `null` or the query itself when setting the limit or providing `false`.
 	 */
 	public function limit($limit = null) {
 		if ($limit) {
-			$this->_config['limit'] = intval($limit);
+			$this->_config['limit'] = (integer) $limit;
 			return $this;
 		}
 		if ($limit === false) {
@@ -377,12 +379,12 @@ class Query extends \lithium\core\Object {
 	/**
 	 * Set and get method for query's offset, i.e. which records to get
 	 *
-	 * @param integer $offset
-	 * @return integer
+	 * @param integer|null $offset
+	 * @return integer|\lithium\data\Query
 	 */
 	public function offset($offset = null) {
 		if ($offset !== null) {
-			$this->_config['offset'] = intval($offset);
+			$this->_config['offset'] = (integer) $offset;
 			return $this;
 		}
 		return $this->_config['offset'];
@@ -391,12 +393,12 @@ class Query extends \lithium\core\Object {
 	/**
 	 * Set and get method for page, in relation to limit, of which records to get
 	 *
-	 * @param integer $page
-	 * @return integer
+	 * @param integer|null $page
+	 * @return integer|\lithium\data\Query
 	 */
 	public function page($page = null) {
 		if ($page) {
-			$this->_config['page'] = $page = (intval($page) ?: 1);
+			$this->_config['page'] = $page = ((integer) $page ?: 1);
 			$this->offset(($page - 1) * $this->_config['limit']);
 			return $this;
 		}
@@ -406,8 +408,8 @@ class Query extends \lithium\core\Object {
 	/**
 	 * Set and get method for the query's order specification.
 	 *
-	 * @param array|string $order
-	 * @return mixed
+	 * @param array|string|null $order
+	 * @return array|\lithium\data\Query
 	 */
 	public function order($order = null) {
 		if ($order) {
@@ -420,8 +422,8 @@ class Query extends \lithium\core\Object {
 	/**
 	 * Set and get method for the `Query` group config setting.
 	 *
-	 * @param string $group New group config setting.
-	 * @return mixed Current group config setting.
+	 * @param string|array|null $group
+	 * @return array|null|\lithium\data\Query
 	 */
 	public function group($group = null) {
 		if ($group) {
@@ -440,8 +442,8 @@ class Query extends \lithium\core\Object {
 	 *
 	 * Comment will have no effect on query, but will be passed along so data source can log it.
 	 *
-	 * @param string $comment
-	 * @return string
+	 * @param string|null $comment
+	 * @return string|\lithium\data\Query
 	 */
 	public function comment($comment = null) {
 		if ($comment) {
@@ -455,7 +457,7 @@ class Query extends \lithium\core\Object {
 	 * Set and get method for the query's entity instance.
 	 *
 	 * @param object $entity Reference to the query's current entity object.
-	 * @return object Reference to the query's current entity object.
+	 * @return \lithium\data\Query|\lithium\data\Entity
 	 */
 	public function &entity(&$entity = null) {
 		if ($entity) {
@@ -543,8 +545,7 @@ class Query extends \lithium\core\Object {
 	/**
 	 * Convert the query's properties to the data sources' syntax and return it as an array.
 	 *
-	 * @param object $source Instance of the data source (`lithium\data\Source`) to use for
-	 *        conversion.
+	 * @param \lithium\data\Source $source Instance of the data source to use for conversion.
 	 * @param array $options Options to use when exporting the data.
 	 * @return array Returns an array containing a data source-specific representation of a query.
 	 */
@@ -557,7 +558,6 @@ class Query extends \lithium\core\Object {
 		} else {
 			$keys =& $this->_config;
 		}
-
 		list($copy, $apply) = Set::slice($keys, $source->methods());
 
 		if (isset($keys['with'])) {
@@ -567,7 +567,6 @@ class Query extends \lithium\core\Object {
 		foreach ($apply as $item => $value) {
 			$results[$item] = $source->{$item}($this->{$item}(), $this);
 		}
-
 		foreach ($copy as $item => $value) {
 			$results[$item] = $this->_config[$item];
 		}
@@ -575,7 +574,6 @@ class Query extends \lithium\core\Object {
 		if (array_key_exists('data', $keys)) {
 			$results['data'] = $this->_exportData();
 		}
-
 		if (array_key_exists('source', $keys)) {
 			$results['source'] = $source->name($results['source']);
 		}
@@ -583,7 +581,6 @@ class Query extends \lithium\core\Object {
 		if (!isset($results['fields'])) {
 			return $results;
 		}
-
 		$created = array('fields', 'values');
 
 		if (is_array($results['fields']) && array_keys($results['fields']) == $created) {
@@ -593,10 +590,9 @@ class Query extends \lithium\core\Object {
 	}
 
 	/**
-	 * Helper method used by `export()` which delegate the query generation to the datasource.
+	 * Helper method used by `export()` which delegate the query generation to the data source.
 	 *
-	 * @param object $source Instance of the data source (`lithium\data\Source`) to use for
-	 *        conversion.
+	 * @param \lithium\data\Source $source Instance of the data source to use for conversion.
 	 */
 	public function applyStrategy(Source $source) {
 		if ($this->_built) {
@@ -621,6 +617,7 @@ class Query extends \lithium\core\Object {
 	 */
 	protected function _exportData() {
 		$data = $this->_entity ? $this->_entity->export() : $this->_data;
+
 		if (!$list = $this->_config['whitelist']) {
 			return $data;
 		}
@@ -701,8 +698,7 @@ class Query extends \lithium\core\Object {
 	/**
 	 * Return the generated aliases mapped to their relation path
 	 *
-	 * @param object $source Instance of the data source (`lithium\data\Source`) to use for
-	 *        conversion.
+	 * @param \lithium\data\Source $source Instance of the data source to use for conversion.
 	 * @return array Map between aliases and their corresponding dotted relation paths.
 	 */
 	public function paths(Source $source = null) {
@@ -715,8 +711,7 @@ class Query extends \lithium\core\Object {
 	/**
 	 * Return the generated aliases mapped to their corresponding model
 	 *
-	 * @param object $source Instance of the data source (`lithium\data\Source`) to use for
-	 *        conversion.
+	 * @param \lithium\data\Source $source Instance of the data source to use for conversion.
 	 * @return array Map between aliases and their corresponding fully-namespaced model names.
 	 */
 	public function models(Source $source = null) {
@@ -742,11 +737,13 @@ class Query extends \lithium\core\Object {
 	}
 
 	/**
-	 * Custom check to determine if our given magic methods can be responded to.
+	 * Determines if a given method can be called.
 	 *
-	 * @param  string  $method     Method name.
-	 * @param  bool    $internal   Interal call or not.
-	 * @return bool
+	 * @param string $method Name of the method.
+	 * @param boolean $internal Provide `true` to perform check from inside the
+	 *                class/object. When `false` checks also for public visibility;
+	 *                defaults to `false`.
+	 * @return boolean Returns `true` if the method can be called, `false` otherwise.
 	 */
 	public function respondsTo($method, $internal = false) {
 		return isset($this->_config[$method]) || parent::respondsTo($method, $internal);
@@ -761,7 +758,7 @@ class Query extends \lithium\core\Object {
 	 */
 	protected function _entityConditions() {
 		if (!$this->_entity || !($model = $this->_config['model'])) {
-			return;
+			return array();
 		}
 		$key = $model::key($this->_entity->data());
 
@@ -779,6 +776,7 @@ class Query extends \lithium\core\Object {
 
 	/**
 	 * Get/set sub queries for the query.
+	 *
 	 * The getter must be called after an export since the sub queries are built
 	 * during the export according the export's `mode` option and the query `with` option.
 	 *

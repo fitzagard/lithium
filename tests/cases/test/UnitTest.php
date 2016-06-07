@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -467,13 +467,16 @@ class UnitTest extends \lithium\test\Unit {
 		$this->assertEqual($expected, $result);
 	}
 
-	public function testExpectException() {
-		$this->test->expectException('test expected exception');
-		$results = $this->test->results();
+	public function testErrorLevelHonored() {
+		$original = error_reporting();
 
-		$expected = 'test expected exception';
-		$result = $this->test->expected();
-		$this->assertEqual($expected, $result[0]);
+		error_reporting($original & ~E_USER_DEPRECATED);
+
+		$this->assertNotException('/^test deprecation$/', function() {
+			trigger_error('test deprecation', E_USER_DEPRECATED);
+		});
+
+		error_reporting($original);
 	}
 
 	public function testHandleException() {
@@ -485,26 +488,13 @@ class UnitTest extends \lithium\test\Unit {
 	}
 
 	public function testExpectExceptionRegex() {
-		$this->test->expectException('/test handle exception/');
+		$test = $this->test;
+		$this->assertException('/deprecated/', function() use ($test) {
+			$test->expectException('/test handle exception/');
+		});
 		$this->test->handleException(new Exception('test handle exception'));
 
 		$this->assertEmpty($this->test->expected());
-	}
-
-	public function testExpectExceptionPostNotThrown() {
-		$this->test->run(array(
-			'methods' => array(
-				'prepareTestExpectExceptionNotThrown'
-			)
-		));
-		$results = $this->test->results();
-		$message = 'expectException in a method with no exception should result in a failed test.';
-
-		$expected = 'fail';
-		$this->assertEqual($expected, $results[0]['result'], $message);
-
-		$expected = 'Expected exception matching `test` uncaught.';
-		$this->assertEqual($expected, $results[0]['message']);
 	}
 
 	public function testGetTest() {
@@ -517,7 +507,7 @@ class UnitTest extends \lithium\test\Unit {
 	 * With a fresh PHP environment this might throw an exception:
 	 * `strtotime(): It is not safe to rely on the system's timezone settings. You are
 	 * *required* to use the date.timezone setting or the date_default_timezone_set() function.`
-	 * See also http://www.php.net/manual/en/function.date-default-timezone-get.php
+	 * See also http://php.net/function.date-default-timezone-get.php
 	 */
 	public function testAssertCookie() {
 		$expected = array(
@@ -590,6 +580,9 @@ class UnitTest extends \lithium\test\Unit {
 	}
 
 	public function testErrorHandling() {
+		$backup = error_reporting();
+		error_reporting(E_ALL);
+
 		$test = new MockErrorHandlingTest();
 
 		$test->run();
@@ -600,6 +593,8 @@ class UnitTest extends \lithium\test\Unit {
 
 		$expected = '/Unit::_arrayPermute()/';
 		$this->assertPattern($expected, $results[0]['message']);
+
+		error_reporting($backup);
 	}
 
 	public function testAssertObjects() {

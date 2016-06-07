@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -31,13 +31,17 @@ class ViewTest extends \lithium\test\Unit {
 	}
 
 	public function testInitializationWithBadLoader() {
-		$this->expectException("Class `Badness` of type `adapter.template.view` not found.");
-		new View(array('loader' => 'Badness'));
+		$expected = "Class `Badness` of type `adapter.template.view` not found.";
+		$this->assertException($expected, function() {
+			new View(array('loader' => 'Badness'));
+		});
 	}
 
 	public function testInitializationWithBadRenderer() {
-		$this->expectException("Class `Badness` of type `adapter.template.view` not found.");
-		new View(array('renderer' => 'Badness'));
+		$expected = "Class `Badness` of type `adapter.template.view` not found.";
+		$this->assertException($expected, function() {
+			new View(array('renderer' => 'Badness'));
+		});
 	}
 
 	public function testEscapeOutputFilter() {
@@ -50,8 +54,6 @@ class ViewTest extends \lithium\test\Unit {
 	/**
 	 * Tests that the output-escaping handler correctly inherits its encoding from the `Response`
 	 * object, if provided.
-	 *
-	 * @return void
 	 */
 	public function testEscapeOutputFilterWithInjectedEncoding() {
 		$message = "Multibyte string support must be enabled to test character encodings.";

@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -61,13 +61,20 @@ abstract class Source extends \lithium\core\Object {
 	protected $_isConnected = false;
 
 	/**
-	 * Constructor. Sets defaults and returns object.
+	 * Holds cached methods.
 	 *
-	 * Options defined:
-	 * - 'autoConnect' `boolean` If true, a connection is made on initialization. Defaults to true.
+	 * @see lithium\data\Source::methods();
+	 * @var array
+	 */
+	protected $_cachedMethods = array();
+
+	/**
+	 * Constructor.
 	 *
-	 * @param array $config
-	 * @return Source object
+	 * @param array $config Available options are:
+	 *        - `'autoConnect'` _boolean_: If `true`, a connection is made on
+	 *           initialization. Defaults to `true`.
+	 * @return void
 	 */
 	public function __construct(array $config = array()) {
 		$defaults = array('autoConnect' => true);
@@ -75,7 +82,7 @@ abstract class Source extends \lithium\core\Object {
 	}
 
 	/**
-	 * Ensures the connection is closed, before the object is destroyed.
+	 * Destructor. Ensures the connection is closed, before the object is destroyed.
 	 *
 	 * @return void
 	 */
@@ -231,7 +238,7 @@ abstract class Source extends \lithium\core\Object {
 	 * @return array
 	 */
 	public function methods() {
-		return get_class_methods($this);
+		return $this->_cachedMethods ?: ($this->_cachedMethods = get_class_methods($this));
 	}
 
 	/**

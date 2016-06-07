@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -63,8 +63,6 @@ class Sqlite3Test extends \lithium\tests\integration\data\Base {
 
 	/**
 	 * Tests that the object is initialized with the correct default values.
-	 *
-	 * @return void
 	 */
 	public function testConstructorDefaults() {
 		$db = new MockSqlite3(array('autoConnect' => false));
@@ -87,8 +85,6 @@ class Sqlite3Test extends \lithium\tests\integration\data\Base {
 	/**
 	 * Tests that this adapter can connect to the database, and that the status is properly
 	 * persisted.
-	 *
-	 * @return void
 	 */
 	public function testDatabaseConnection() {
 		$db = new Sqlite3(array('autoConnect' => false) + $this->_dbConfig);
@@ -168,8 +164,11 @@ class Sqlite3Test extends \lithium\tests\integration\data\Base {
 	}
 
 	public function testExecuteException() {
-		$this->expectException();
-		$this->_db->read('SELECT deliberate syntax error');
+		$db = $this->_db;
+
+		$this->assertException('/.*/', function() use ($db) {
+			$db->read('SELECT deliberate syntax error');
+		});
 	}
 
 	public function testEntityQuerying() {

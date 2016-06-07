@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -31,6 +31,10 @@ class SecurityTest extends \lithium\test\Unit {
 	public function setUp() {
 		$this->context = new MockFormRenderer(compact('request'));
 		$this->subject = new Security(array('context' => $this->context));
+
+		FormSignature::config(array(
+			'secret' => 'wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY'
+		));
 	}
 
 	/**
@@ -83,16 +87,131 @@ class SecurityTest extends \lithium\test\Unit {
 		list(, $signature) = $match;
 
 		$expected = array(
-			'a%3A1%3A%7Bs%3A6%3A%22active%22%3Bs%3A4%3A%22true%22%3B%7D',
+			'#a%3A1%3A%7Bs%3A6%3A%22active%22%3Bs%3A4%3A%22true%22%3B%7D',
 			'a%3A0%3A%7B%7D',
-			'$2a$10$NuNTOeXv4OHpPJtbdAmfReFiSmFw5hmc6sSy8qwns6/DWNSSOjR1y'
+			'[a-z0-9]{128}#'
 		);
-		$this->assertEqual(join('::', $expected), $signature);
+		$this->assertPattern(join('::', $expected), $signature);
 
 		$request = new Request(array('data' => array(
 			'email' => 'foo@baz',
 			'pass' => 'whatever',
 			'active' => 'true',
+			'security' => compact('signature')
+		)));
+		$this->assertTrue(FormSignature::check($request));
+	}
+
+	public function testFormSignatureWithLockedAndExcluded() {
+		$form = new Form(array('context' => $this->context));
+		$validator = 'lithium\tests\mocks\security\validation\MockFormSignature';
+
+		$helper = new Security(array(
+			'context' => $this->context,
+			'classes' => array(
+				'formSignature' => $validator
+			)
+		));
+
+		$helper->sign($form);
+
+		ob_start();
+		$content = array(
+			$form->create(null, array('url' => 'http:///')),
+			$form->text('email', array('value' => 'foo@bar')),
+			$form->password('pass'),
+			$form->hidden('id', array('value' => 23)),
+			$form->text('foo', array('value' => 'bar', 'exclude' => true)),
+			$form->hidden('active', array('value' => 'true', 'exclude' => true, 'locked' => false)),
+			$form->end()
+		);
+		ob_get_clean();
+
+		$result = $validator::$compile[0]['in'];
+		$expected = array(
+			'fields' => array(
+				'email', 'pass'
+			),
+			'excluded' => array(
+				'foo',
+				'active'
+			),
+			'locked' => array(
+				'id' => 23
+			)
+		);
+		$compiledSignature = $validator::$compile[0]['out'];
+
+		$this->assertEqual($expected, $result);
+
+		$request = new Request(array(
+			'data' => array(
+				'security' => array('signature' => $compiledSignature)
+			)
+		));
+		$validator::check($request);
+
+		$expected = $compiledSignature;
+		$result = $validator::$parse[0]['in']['signature'];
+		$this->assertEqual($expected, $result);
+
+		$result = $validator::$parse[0]['out'];
+		$expected = array(
+			'excluded' => array(
+				'active',
+				'foo'
+			),
+			'locked' => array(
+				'id' => 23
+			)
+		);
+		$this->assertEqual($expected, $result);
+
+		$validator::reset();
+	}
+
+	public function testFormSignatureWithLabelField() {
+		$form = new Form(array('context' => $this->context));
+		$this->subject->sign($form);
+
+		ob_start();
+		$content = array(
+			$form->create(null, array('url' => 'http:///')),
+			$form->label('foo'),
+			$form->text('email', array('value' => 'foo@bar')),
+			$form->end()
+		);
+		$signature = ob_get_clean();
+		preg_match('/value="([^"]+)"/', $signature, $match);
+		list(, $signature) = $match;
+		$result = $signature;
+
+		$data = array(
+			'fields' => array(
+				'email' => 'foo@bar',
+			)
+		);
+		$expected = FormSignature::key($data);
+		$this->assertEqual($expected, $result);
+	}
+
+	public function testFormSignatureWithMethodPUT() {
+		$form = new Form(array('context' => $this->context));
+		$this->subject->sign($form);
+
+		ob_start();
+		$content = array(
+			$form->create(null, array('url' => 'http:///', 'method' => 'PUT')),
+			$form->text('email', array('value' => 'foo@bar')),
+			$form->end()
+		);
+		$signature = ob_get_clean();
+		preg_match('/value="([^"]+)"/', $signature, $match);
+		list(, $signature) = $match;
+
+		$request = new Request(array('data' => array(
+			'_method' => 'PUT',
+			'email' => 'foo@baz',
 			'security' => compact('signature')
 		)));
 		$this->assertTrue(FormSignature::check($request));

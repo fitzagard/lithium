@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -49,6 +49,22 @@ class ResponseTest extends \lithium\test\Unit {
 		$this->assertIdentical('HTTP/1.1 200 OK', $this->response->testHeaders[0]);
 	}
 
+	public function testResponseRenderWithCookies() {
+		$this->response->cookies(array(
+			'Name' => array('value' => 'Ali', 'domain' => '.li3.me', 'secure' => true),
+			'Destination' => array('value' => 'The Future', 'expires' => 'Oct 21 2015 4:29 PM PDT')
+		));
+		ob_start();
+		$this->response->render();
+		$result = ob_get_clean();
+		$expected = array(
+			'HTTP/1.1 200 OK',
+			'Set-Cookie: Name=Ali; Domain=.li3.me; Secure',
+			'Set-Cookie: Destination=The%20Future; Expires=Wed, 21-Oct-2015 23:29:00 GMT',
+		);
+		$this->assertIdentical($expected, $this->response->testHeaders);
+	}
+
 	public function testResponseToString() {
 		$this->response->type(false);
 		$this->response->body = 'Document body';
@@ -92,7 +108,9 @@ class ResponseTest extends \lithium\test\Unit {
 
 		$this->response->body = 'Created';
 		$this->response->status(201);
-		$result = $this->response->cache(false);
+		$this->response->cache(false);
+
+		$result = $this->response->headers();
 
 		$expected = array(
 			'Expires: Mon, 26 Jul 1997 05:00:00 GMT',
@@ -121,8 +139,6 @@ class ResponseTest extends \lithium\test\Unit {
 
 	/**
 	 * Tests various methods of specifying HTTP status codes.
-	 *
-	 * @return void
 	 */
 	public function testStatusCodes() {
 		$this->response->status('Created');
@@ -146,20 +162,28 @@ class ResponseTest extends \lithium\test\Unit {
 	}
 
 	/**
-	 * Tests location headers and custom header add-ons, like 'download'.
-	 *
-	 * @return void
+	 * Tests custom header add-ons, like 'download'.
 	 */
-	public function testHeaderTypes() {
-		$this->response->headers('download', 'report.csv');
+	public function testDownloadMagicHeader() {
+		$response = $this->response;
+
+		$this->assertException('/deprecated/', function() use ($response) {
+			$response->headers('download', 'report.csv');
+		});
+	}
+
+	/**
+	 * Tests location headers.
+	 */
+	public function testLocationHeader() {
+		$this->response = new MockResponse();
+		$this->response->status(301);
+		$this->response->headers('Location', '/');
 		ob_start();
 		$this->response->render();
 		ob_get_clean();
 
-		$headers = array(
-			'HTTP/1.1 200 OK',
-			'Content-Disposition: attachment; filename="report.csv"'
-		);
+		$headers = array('HTTP/1.1 301 Moved Permanently', 'Location: /');
 		$this->assertEqual($headers, $this->response->testHeaders);
 
 		$this->response = new MockResponse();
@@ -169,18 +193,6 @@ class ResponseTest extends \lithium\test\Unit {
 		ob_get_clean();
 
 		$headers = array('HTTP/1.1 302 Found', 'Location: /');
-		$this->assertEqual($headers, $this->response->testHeaders);
-	}
-
-	public function testLocationHeaderStatus() {
-		$this->response = new MockResponse();
-		$this->response->status(301);
-		$this->response->headers('Location', '/');
-		ob_start();
-		$this->response->render();
-		ob_get_clean();
-
-		$headers = array('HTTP/1.1 301 Moved Permanently', 'Location: /');
 		$this->assertEqual($headers, $this->response->testHeaders);
 
 		$this->response = new Response(array(

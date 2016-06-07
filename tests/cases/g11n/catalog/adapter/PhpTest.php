@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -141,6 +141,52 @@ EOD;
 				'flags' => array(),
 				'comments' => array(),
 				'occurrences' => array()
+			)
+		);
+		$this->assertEqual($expected, $result);
+	}
+
+	public function testReadWithContext() {
+		mkdir("{$this->_path}/fr/message", 0755, true);
+
+		$data = <<<EOD
+<?php
+return array(
+	'green' => 'vert',
+	'fast|speed' => 'rapide',
+	'fast|go without food' => 'jeûner'
+);
+?>
+EOD;
+		file_put_contents("{$this->_path}/fr/message/default.php", $data);
+
+		$result = $this->adapter->read('message', 'fr', null);
+		$expected = array(
+			'green' => array(
+				'id' => 'green',
+				'ids' => array(),
+				'translated' => 'vert',
+				'flags' => array(),
+				'comments' => array(),
+				'occurrences' => array()
+			),
+			'fast|speed' => array(
+				'id' => 'fast',
+				'ids' => array(),
+				'translated' => 'rapide',
+				'flags' => array(),
+				'comments' => array(),
+				'occurrences' => array(),
+				'context' => 'speed'
+			),
+			'fast|go without food' => array(
+				'id' => 'fast',
+				'ids' => array(),
+				'translated' => 'jeûner',
+				'flags' => array(),
+				'comments' => array(),
+				'occurrences' => array(),
+				'context' => 'go without food'
 			)
 		);
 		$this->assertEqual($expected, $result);

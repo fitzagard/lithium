@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -197,6 +197,28 @@ class MessageTest extends \lithium\test\Unit {
 
 		$expected = 'Nr. 8';
 		$result = Message::translate('No. {:id}', array('locale' => 'de', 'id' => 8));
+		$this->assertEqual($expected, $result);
+	}
+
+	public function testTranslateContext() {
+		$data = array(
+			'fast|speed' => 'rapide',
+			'fast|go without food' => 'jeûner'
+		);
+		Catalog::write('runtime', 'message', 'fr', $data);
+
+		$expected = 'rapide';
+		$result = Message::translate('fast', array(
+			'locale' => 'fr',
+			'context' => 'speed'
+		));
+		$this->assertEqual($expected, $result);
+
+		$expected = 'jeûner';
+		$result = Message::translate('fast', array(
+			'locale' => 'fr',
+			'context' => 'go without food'
+		));
 		$this->assertEqual($expected, $result);
 	}
 

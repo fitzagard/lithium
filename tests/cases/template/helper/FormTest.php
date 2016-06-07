@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -975,6 +975,32 @@ class FormTest extends \lithium\test\Unit {
 
 		$this->form->config(array('templates' => array('end' => "</table></form>")));
 		$this->assertTags($this->form->end(), array('/table', '/form'));
+	}
+
+	public function testFormFieldCheckboxWithCustomConfig() {
+		$this->form->config(array(
+			'field-checkbox' => array('wrap' => array('class' => 'custom-field-checkbox'))
+		));
+		$result = $this->form->field('checkbox', array('type' => 'checkbox'));
+
+		$this->assertTags($result, array(
+			'div' => array('class' => 'custom-field-checkbox'),
+			array('input' => array(
+				'type' => 'hidden',
+				'name' => 'checkbox',
+				'value' => ''
+			)),
+			array('input' => array(
+				'type' => 'checkbox',
+				'name' => 'checkbox',
+				'id' => 'Checkbox',
+				'value' => 1
+			)),
+			'label' => array('for' => 'Checkbox'),
+			'Checkbox',
+			'/label',
+			'/div'
+		));
 	}
 
 	/**

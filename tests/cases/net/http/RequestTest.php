@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -66,6 +66,19 @@ class RequestTest extends \lithium\test\Unit {
 		$expected = 'Part 1';
 		$result = $request->body();
 		$this->assertEqual($expected, $result);
+	}
+
+	public function testConstructWithCookies() {
+		$request = new Request(array(
+			'host' => 'localhost',
+			'port' => 443,
+			'headers' => array('Cookie' => 'name1=value1; name2=value2'),
+			'body' => array('Part 1'),
+			'params' => array('param' => 'value')
+		));
+
+		$expected = array('name1' => 'value1', 'name2' => 'value2');
+		$this->assertEqual($expected, $request->cookies());
 	}
 
 	public function testConstructWithPath() {

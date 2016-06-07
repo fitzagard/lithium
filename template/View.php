@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -40,20 +40,20 @@ use lithium\template\TemplateException;
  *
  * A simple example, using the `Simple` renderer/loader for string templates:
  *
- * {{{
+ * ```
  * $view = new View(array('loader' => 'Simple', 'renderer' => 'Simple'));
  * echo $view->render('element', array('name' => "Robert"), array('element' => 'Hello, {:name}!'));
  *
  * // Output:
  * "Hello, Robert!";
- * }}}
+ * ```
  *
  *  _Note_: This is easily adapted for XML templating.
  *
  * Another example, this time of something that could be used in an application
  * error handler:
  *
- * {{{
+ * ```
  * $view = new View(array(
  *     'paths' => array(
  *         'template' => '{:library}/views/errors/{:template}.{:type}.php',
@@ -65,7 +65,7 @@ use lithium\template\TemplateException;
  *     'template' => '404',
  *     'layout' => 'error'
  * ));
- * }}}
+ * ```
  *
  * To learn more about processes and process steps, see the `$_processes` and `$_steps` properties,
  * respectively.
@@ -113,7 +113,7 @@ class View extends \lithium\core\Object {
 	/**
 	 * Object responsible for rendering output.
 	 *
-	 * @var objet Renderer object.
+	 * @var object Renderer object.
 	 */
 	protected $_renderer = null;
 
@@ -218,6 +218,7 @@ class View extends \lithium\core\Object {
 	 *         - `'outputFilters'` _array_: An array of filters to be used when handling output. By
 	 *           default, the class is initialized with one filter, `h`, which is used in automatic
 	 *           output escaping.
+	 * @return void
 	 */
 	public function __construct(array $config = array()) {
 		$defaults = array(

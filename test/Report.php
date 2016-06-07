@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -23,7 +23,7 @@ use lithium\core\ClassNotFoundException;
  *
  * Example usage, for built-in HTML format:
  *
- * {{{
+ * ```
  * $report = new Report(array(
  *     'title' => 'Test Report Title',
  *     'group' => new Group(array('data' => array('lithium\tests\cases\net\http\MediaTest'))),
@@ -37,12 +37,12 @@ use lithium\core\ClassNotFoundException;
  *
  * // Get test results:
  * $report->results
- * }}}
+ * ```
  *
  * You may also choose to filter the results of the test runs to obtain additional information.
  * For example, say you wish to calculate the cyclomatic complexity of the classes you are testing:
  *
- * {{{
+ * ```
  * $report = new Report(array(
  *     'title' => 'Test Report Title',
  *     'group' => new Group(array('data' => array('lithium\tests\cases\net\http\MediaTest'))),
@@ -53,7 +53,7 @@ use lithium\core\ClassNotFoundException;
  *
  * // Get test results, including filter results:
  * $report->results
- * }}}
+ * ```
  *
  * @see lithium\test\Group
  * @see lithium\test\filter
@@ -107,6 +107,7 @@ class Report extends \lithium\core\Object {
 	 *        - `'filters'`: An array of filters that the test output should be run through.
 	 *        - `'format'`: The format of the template to use, defaults to `'txt'`.
 	 *        - `'reporter'`: The reporter to use.
+	 * @return void
 	 */
 	public function __construct(array $config = array()) {
 		$defaults = array(
@@ -222,7 +223,7 @@ class Report extends \lithium\core\Object {
 	public function render($template, $data = array()) {
 		$config = $this->_config;
 
-		if ($template === "stats" && !$data) {
+		if ($template === 'stats' && !$data) {
 			$data = $this->stats();
 		}
 		$template = Libraries::locate('test.templates', $template, array(

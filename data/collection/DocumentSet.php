@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -108,6 +108,14 @@ class DocumentSet extends \lithium\data\Collection {
 		return $result;
 	}
 
+	/**
+	 * Helper method to normalize and set data.
+	 *
+	 * @param mixed $data
+	 * @param null|integer|string $offset
+	 * @param array $options
+	 * @return mixed The (potentially) cast data.
+	 */
 	protected function _set($data = null, $offset = null, $options = array()) {
 		if ($schema = $this->schema()) {
 			$model = $this->_model;
@@ -124,7 +132,7 @@ class DocumentSet extends \lithium\data\Collection {
 		if (is_object($key)) {
 			$key = (string) $key;
 		}
-		if (method_exists($data, 'assignTo')) {
+		if (is_object($data) && method_exists($data, 'assignTo')) {
 			$data->assignTo($this);
 		}
 		$key !== null ? $this->_data[$key] = $data : $this->_data[] = $data;

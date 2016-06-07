@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -36,7 +36,7 @@ class Response extends \lithium\net\http\Message {
 	 * of PHP `setcookie()`.
 	 *
 	 * @see lithium\net\http\Response::cookies()
-	 * @see http://php.net/manual/en/function.setcookie.php
+	 * @see http://php.net/function.setcookie.php
 	 * @var array
 	 */
 	public $cookies = array();
@@ -87,33 +87,37 @@ class Response extends \lithium\net\http\Message {
 		423 => 'Locked',
 		424 => 'Method Failure',
 		428 => 'Precondition Required',
+		429 => 'Too Many Requests',
+		431 => 'Request Header Fields Too Large',
 		451 => 'Unavailable For Legal Reasons',
 		500 => 'Internal Server Error',
 		501 => 'Not Implemented',
 		502 => 'Bad Gateway',
 		503 => 'Service Unavailable',
 		504 => 'Gateway Time-out',
-		507 => 'Insufficient Storage'
+		507 => 'Insufficient Storage',
+		511 => 'Network Authentication Required'
 	);
 
 	/**
-	 * Adds config values to the public properties when a new object is created.
+	 * Constructor. Adds config values to the public properties when a new object is created.
 	 *
-	 * @param array $config Configuration options : default value
-	 *        - `'protocol'` _string_: null
-	 *        - `'version'` _string_: '1.1'
-	 *        - `'headers'` _array_: array()
-	 *        - `'body'` _mixed_: null
-	 *        - `'message'` _string_: null
-	 *        - `'status'` _mixed_: null
-	 *        - `'type'` _string_: null
+	 * @see lithium\net\http\Message::__construct()
+	 * @see lithium\net\Message::__construct()
+	 * @param array $config The available configuration options are the following. Further
+	 *        options are inherited from the parent classes.
+	 *        - `'message'` _string_: Defaults to `null`.
+	 *        - `'status'` _mixed_: Defaults to `null`.
+	 *        - `'type'` _string_: Defaults to `null`.
+	 *        - `'cookies'` _array_: Defaults to `array()`.
+	 * @return void
 	 */
 	public function __construct(array $config = array()) {
 		$defaults = array(
 			'message' => null,
 			'status' => null,
 			'type' => null,
-			'cookies' => null
+			'cookies' => array()
 		);
 		parent::__construct($config + $defaults);
 
@@ -170,10 +174,11 @@ class Response extends \lithium\net\http\Message {
 	/**
 	 * Set and get the status for the response.
 	 *
-	 * @param string $key Optional. Set to 'code' or 'message' to return just the code or message
-	 *        of the status, otherwise returns the full status header.
+	 * @param string $key Optional. Set to `'code'` or `'message'` to return just the code
+	 *        or message of the status, otherwise returns the full status header.
 	 * @param string $status The code or message of the status you wish to set.
-	 * @return string Returns the full HTTP status, with version, code and message.
+	 * @return string Returns the full HTTP status, with version, code and message or
+	 *         dending on $key just the code or message.
 	 */
 	public function status($key = null, $status = null) {
 		if ($status === null) {
@@ -218,7 +223,7 @@ class Response extends \lithium\net\http\Message {
 	 * Cookies which have been set multiple times do not overwrite each other.  Rather they are stored
 	 * as an array of associative arrays.
 	 *
-	 * @see http://php.net/manual/en/function.setcookie.php
+	 * @see http://php.net/function.setcookie.php
 	 * @param string $key
 	 * @param string $value
 	 * @return mixed

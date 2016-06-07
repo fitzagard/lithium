@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2009, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -17,7 +17,7 @@ use lithium\util\collection\Filters;
  * the `ErrorHandler`'s configuration, it is possible to have very broad but very tight control
  * over error handling in your application.
  *
- * {{{ embed:lithium\tests\cases\core\ErrorHandlerTest::testExceptionCatching(2-7) }}}
+ * ``` embed:lithium\tests\cases\core\ErrorHandlerTest::testExceptionCatching(2-7) ```
  *
  * Using a series of cascading rules and handlers, it is possible to capture and handle very
  * specific errors and exceptions.
@@ -42,7 +42,7 @@ class ErrorHandler extends \lithium\core\StaticObject {
 	/**
 	 * Currently registered exception handler.
 	 *
-	 * @var closure Closure representing exception handler.
+	 * @var \Closure Closure representing exception handler.
 	 */
 	protected static $_exceptionHandler = null;
 

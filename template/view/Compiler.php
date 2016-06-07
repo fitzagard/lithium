@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -57,9 +57,11 @@ class Compiler extends \lithium\core\StaticObject {
 		$options += $defaults;
 
 		$stats = stat($file);
-		$dir = dirname($file);
-		$oname = basename(dirname($dir)) . '_' . basename($dir) . '_' . basename($file, '.php');
-		$template = "template_{$oname}_{$stats['ino']}_{$stats['mtime']}_{$stats['size']}.php";
+
+		$oname  = basename(dirname($file)) . '_' . basename($file, '.php');
+		$oname .= '_' . ($stats['ino'] ?: hash('md5', $file));
+
+		$template = "template_{$oname}_{$stats['mtime']}_{$stats['size']}.php";
 		$template = "{$options['path']}/{$template}";
 
 		if (file_exists($template)) {
@@ -68,7 +70,7 @@ class Compiler extends \lithium\core\StaticObject {
 		$compiled = static::compile(file_get_contents($file));
 
 		if (is_writable($cachePath) && file_put_contents($template, $compiled) !== false) {
-			foreach (glob("{$options['path']}/template_{$oname}_*.php") as $expired) {
+			foreach (glob("{$options['path']}/template_{$oname}_*.php", GLOB_NOSORT) as $expired) {
 				if ($expired !== $template) {
 					unlink($expired);
 				}

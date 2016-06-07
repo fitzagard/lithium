@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -26,7 +26,7 @@ class Relationship extends \lithium\core\Object {
 	 * @var array
 	 */
 	protected $_classes = array(
-		'entity'      => 'lithium\data\Entity'
+		'entity' => 'lithium\data\Entity'
 	);
 
 	/**
@@ -60,14 +60,14 @@ class Relationship extends \lithium\core\Object {
 	const LINK_REF = 'ref';
 
 	/**
-	 * Constructs an object that represents a relationship between two model classes.
+	 * Constructor. Constructs an object that represents a relationship between two model classes.
 	 *
 	 * @param array $config The relationship's configuration, which defines how the two models in
 	 *        question are bound. The available options are:
 	 *        - `'name'` _string_: The name of the relationship in the context of the
 	 *          originating model. For example, a `Posts` model might define a relationship to
 	 *          a `Users` model like so:
-	 *          {{{ public $hasMany = array('Author' => array('to' => 'Users')); }}}
+	 *          `public $hasMany = array('Author' => array('to' => 'Users'));`
 	 *          In this case, the relationship is bound to the `Users` model, but `'Author'` would
 	 *          be the relationship name. This is the name with which the relationship is
 	 *          referenced in the originating model.
@@ -100,9 +100,10 @@ class Relationship extends \lithium\core\Object {
 	 *          other database-native value. If an array, maps fields from the related object
 	 *          either to fields elsewhere, or to arbitrary expressions. In either case, _the
 	 *          values specified here will be literally interpreted by the database_.
-	 *        - `'strategy'` _closure_: An anonymous function used by an instantiating class,
+	 *        - `'strategy'` _\Closure_: An anonymous function used by an instantiating class,
 	 *          such as a database object, to provide additional, dynamic configuration, after
 	 *          the `Relationship` instance has finished configuring itself.
+	 * @return void
 	 */
 	public function __construct(array $config = array()) {
 		$defaults = array(
@@ -186,7 +187,6 @@ class Relationship extends \lithium\core\Object {
 	 * @return object Returns the object(s) for this relationship.
 	 */
 	public function get($object, array $options = array()) {
-		$model = $this->to();
 		$link = $this->link();
 		$strategies = $this->_strategies();
 
@@ -243,11 +243,13 @@ class Relationship extends \lithium\core\Object {
 	}
 
 	/**
-	 * Custom check to determine if our given magic methods can be responded to.
+	 * Determines if a given method can be called.
 	 *
-	 * @param  string  $method     Method name.
-	 * @param  bool    $internal   Interal call or not.
-	 * @return bool
+	 * @param string $method Name of the method.
+	 * @param boolean $internal Provide `true` to perform check from inside the
+	 *                class/object. When `false` checks also for public visibility;
+	 *                defaults to `false`.
+	 * @return boolean Returns `true` if the method can be called, `false` otherwise.
 	 */
 	public function respondsTo($method, $internal = false) {
 		return is_callable(array($this, $method), true);
@@ -297,9 +299,11 @@ class Relationship extends \lithium\core\Object {
 			},
 			static::LINK_KEY => function($object, $relationship, $options) {
 				$model = $relationship->to();
-				$query = $relationship->query($object);
+				if (!$query = $relationship->query($object)) {
+					return;
+				}
 				$method = ($relationship->type() === "hasMany") ? 'all' : 'first';
-				return $model::$method(Set::merge($query, $options));
+				return $model::$method(Set::merge((array) $query, (array) $options));
 			},
 			static::LINK_KEY_LIST  => function($object, $relationship, $options) {
 				$model = $relationship->to();

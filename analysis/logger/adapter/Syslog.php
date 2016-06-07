@@ -2,13 +2,11 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2012, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
 namespace lithium\analysis\logger\adapter;
-
-use Closure;
 
 /**
  * The Syslog adapter facilitates logging messages to a `syslogd` backend. See the constructor for
@@ -42,19 +40,20 @@ class Syslog extends \lithium\core\Object {
 	);
 
 	/**
-	 * Class constructor. Configures the `Syslog` adapter instance with the default settings. For
-	 * more information on these settings, see the documentation for
-	 * [the `openlog()` function](http://php.net/openlog).
+	 * Constructor. Configures the `Syslog` adapter instance with the default settings. For
+	 * more information on these settings, see the documentation for tthe `openlog()` function.
 	 *
+	 * @link http://php.net/openlog
 	 * @param array $config Available configuration settings for this adapter:
-	 *              - `'identity'` _string_: The identity string to be attached to each message in
-	 *                the system log. This is usually a string that meaningfully identifies your
-	 *                application. Defaults to `false`.
-	 *              - `'options'` _integer_: The flags to use when opening the log. Defaults to
-	 *                `LOG_ODELAY`.
-	 *              - `'facility'` _integer_: A flag specifying the program to use to log the
-	 *                messages. See the `openlog()` documentation for more information. Defaults to
-	 *                `LOG_USER`.
+	 *        - `'identity'` _string_: The identity string to be attached to each message in
+	 *          the system log. This is usually a string that meaningfully identifies your
+	 *          application. Defaults to `false`.
+	 *        - `'options'` _integer_: The flags to use when opening the log. Defaults to
+	 *          `LOG_ODELAY`.
+	 *        - `'facility'` _integer_: A flag specifying the program to use to log the
+	 *          messages. See the `openlog()` documentation for more information. Defaults to
+	 *          `LOG_USER`.
+	 * @return void
 	 */
 	public function __construct(array $config = array()) {
 		$defaults = array('identity' => false, 'options'  => LOG_ODELAY, 'facility' => LOG_USER);
@@ -66,7 +65,7 @@ class Syslog extends \lithium\core\Object {
 	 *
 	 * @param string $priority The message priority string. Maps to a `syslogd` priority constant.
 	 * @param string $message The message to write.
-	 * @return Closure Function returning boolean `true` on successful write, `false` otherwise.
+	 * @return \Closure Function returning boolean `true` on successful write, `false` otherwise.
 	 */
 	public function write($priority, $message) {
 		$config = $this->_config;

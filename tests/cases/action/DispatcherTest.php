@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2012, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -19,6 +19,7 @@ class DispatcherTest extends \lithium\test\Unit {
 
 	public function tearDown() {
 		Router::reset();
+		MockDispatcher::reset();
 	}
 
 	public function testRun() {
@@ -31,8 +32,9 @@ class DispatcherTest extends \lithium\test\Unit {
 	}
 
 	public function testRunWithNoRouting() {
-		$this->expectException('/Could not route request/');
-		MockDispatcher::run(new Request(array('url' => '/')));
+		$this->assertException('/Could not route request/', function() {
+			MockDispatcher::run(new Request(array('url' => '/')));
+		});
 	}
 
 	/**
@@ -103,11 +105,13 @@ class DispatcherTest extends \lithium\test\Unit {
 		$this->assertEqual($expected, Dispatcher::applyRules($params));
 	}
 
-	public function testConfigManipulation() {
+	public function testRunWithoutRules() {
 		$config = MockDispatcher::config();
 		$expected = array('rules' => array());
 		$this->assertEqual($expected, $config);
+	}
 
+	public function testRunWithAdminActionRule() {
 		MockDispatcher::config(array('rules' => array(
 			'admin' => array('action' => 'admin_{:action}')
 		)));
@@ -118,22 +122,24 @@ class DispatcherTest extends \lithium\test\Unit {
 		$result = end(MockDispatcher::$dispatched);
 		$expected = array('action' => 'admin_test', 'controller' => 'Test', 'admin' => true);
 		$this->assertEqual($expected, $result->params);
+	}
 
+	public function testRunWithGenericActionRule() {
 		MockDispatcher::config(array('rules' => array(
 			'action' => array('action' => function($params) {
 				return Inflector::camelize(strtolower($params['action']), false);
 			})
 		)));
 
-		MockDispatcher::$dispatched = array();
-		Router::reset();
 		Router::connect('/', array('controller' => 'test', 'action' => 'TeST-camelize'));
 		MockDispatcher::run(new Request(array('url' => '/')));
 
 		$result = end(MockDispatcher::$dispatched);
 		$expected = array('action' => 'testCamelize', 'controller' => 'Test');
 		$this->assertEqual($expected, $result->params);
+	}
 
+	public function testRunWithSpecialRuleAsCallable() {
 		MockDispatcher::config(array('rules' => function($params) {
 			if (isset($params['admin'])) {
 				return array('special' => array('action' => 'special_{:action}'));
@@ -141,8 +147,6 @@ class DispatcherTest extends \lithium\test\Unit {
 			return array();
 		}));
 
-		MockDispatcher::$dispatched = array();
-		Router::reset();
 		Router::connect('/', array('controller' => 'test', 'action' => 'test', 'admin' => true));
 		Router::connect('/special', array(
 			'controller' => 'test', 'action' => 'test',
@@ -164,18 +168,38 @@ class DispatcherTest extends \lithium\test\Unit {
 		$this->assertEqual($expected, $result->params);
 	}
 
+	public function testRunWithContinuingRules() {
+		MockDispatcher::config(array('rules' => array(
+			'api' => array('action' => 'api_{:action}'),
+			'admin' => array('action' => 'admin_{:action}')
+		)));
+
+		Router::connect('/', array(
+			'controller' => 'test', 'action' => 'test', 'admin' => true, 'api' => true
+		));
+		MockDispatcher::run(new Request(array('url' => '/')));
+
+		$result = end(MockDispatcher::$dispatched);
+		$expected = array(
+			'action' => 'admin_api_test', 'controller' => 'Test', 'admin' => true, 'api' => true
+		);
+		$this->assertEqual($expected, $result->params);
+	}
+
 	public function testControllerLookupFail() {
 		Dispatcher::config(array('classes' => array('router' => __CLASS__)));
 
-		$this->expectException("/Controller `SomeNonExistentController` not found/");
-		Dispatcher::run(new Request(array('url' => '/')));
+		$this->assertException("/Controller `SomeNonExistentController` not found/", function() {
+			Dispatcher::run(new Request(array('url' => '/')));
+		});
 	}
 
 	public function testPluginControllerLookupFail() {
 		Dispatcher::config(array('classes' => array('router' => __CLASS__)));
 
-		$this->expectException("/Controller `some_invalid_plugin.Controller` not found/");
-		Dispatcher::run(new Request(array('url' => '/plugin')));
+		$this->assertException("/Controller `some_invalid_plugin.Controller` not found/", function() {
+			Dispatcher::run(new Request(array('url' => '/plugin')));
+		});
 	}
 
 	public function testCall() {

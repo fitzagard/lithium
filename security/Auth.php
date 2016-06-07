@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -28,7 +28,7 @@ use lithium\core\ConfigException;
  * the session adapter. This prevents a possible password hash to be leaked in a cookie (for
  * example). You can also be very specific on what you want to store in the session:
  *
- * {{{
+ * ```
  * Auth::config(array(
  *   'default' => array(
  *      'session' => array(
@@ -36,7 +36,7 @@ use lithium\core\ConfigException;
  *      )
  *   )
  * ));
- * }}}
+ * ```
  *
  * You can also pass an optional `persist` param to the `check` method to override this default.
  *
@@ -117,6 +117,8 @@ class Auth extends \lithium\core\Adaptable {
 	 *                user information is, by default, written to the session. Set this to `false`
 	 *                to disable session writing for this authentication check.
 	 *              - `'persist'` _array_: A list of fields that should be stored in the session.
+	 *                If no list is provided will store all fields in the session except
+	 *                the `'password'` field.
 	 * @return array After a successful credential check against the adapter (or a successful
 	 *         lookup against the current session), returns an array of user information from the
 	 *         storage backend used by the configured adapter.
@@ -136,7 +138,6 @@ class Auth extends \lithium\core\Adaptable {
 		return static::_filter(__FUNCTION__, $params, function($self, $params) {
 			extract($params);
 			$config = $self::invokeMethod('_config', array($name));
-			$persist = $options['persist'];
 
 			if ($config === null) {
 				throw new ConfigException("Configuration `{$name}` has not been defined.");

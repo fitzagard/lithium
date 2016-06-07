@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -24,7 +24,7 @@ class Help extends \lithium\console\Command {
 	 * Auto run the help command.
 	 *
 	 * @param string $command Name of the command to return help about.
-	 * @return void
+	 * @return boolean
 	 */
 	public function run($command = null) {
 		$message = 'Lithium console started in the ' . Environment::get() . ' environment.';

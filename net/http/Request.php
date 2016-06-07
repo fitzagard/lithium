@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -50,7 +50,7 @@ class Request extends \lithium\net\http\Message {
 	 */
 	public $cookies = array();
 
- 	/**
+	/**
 	 * An array of closures representing various formats this object can be exported to.
 	 *
 	 * @var array
@@ -58,27 +58,22 @@ class Request extends \lithium\net\http\Message {
 	protected $_formats = array();
 
 	/**
-	 * Adds config values to the public properties when a new object is created.
+	 * Constructor. Adds config values to the public properties when a new object is created.
 	 *
-	 * @param array $config Configuration options : default value
-	 *        - `'protocol'` _string_: null
-	 *        - `'version'` _string_: '1.1'
-	 *        - `'method'` _string_: 'GET'
-	 *        - `'scheme'` _string_: 'http'
-	 *        - `'host'` _string_: 'localhost'
-	 *        - `'port'` _integer_: null
-	 *        - `'username'` _string_: null
-	 *        - `'password'` _string_: null
-	 *        - `'path'` _string_: null
-	 *        - `'query'` _array_: array()
-	 *        - `'headers'` _array_: array()
-	 *        - `'cookies'` _array_: array()
-	 *        - `'type'` _string_: null
-	 *        - `'auth'` _mixed_: null
-	 *        - `'body'` _mixed_: null
-	 *        - `'proxy'` _string_: null
-	 *        - `'ignoreErrors'` _boolean_: true
-	 *        - `'followLocation'` _boolean_: true
+	 * @see lithium\net\http\Message::__construct()
+	 * @see lithium\net\Message::__construct()
+	 * @param array $config The available configuration options are the following. Further
+	 *        options are inherited from the parent classes.
+	 *        - `'method'` _string_: Defaults to `'GET'`.
+	 *        - `'path'` _string_: Defaults to `null`.
+	 *        - `'query'` _array_: Defaults to `array()`.
+	 *        - `'cookies'` _array_: Defaults to `array()`.
+	 *        - `'type'` _string_: Defaults to `null`.
+	 *        - `'auth'` _mixed_: Defaults to `null`.
+	 *        - `'proxy'` _string_: Defaults to `null`.
+	 *        - `'ignoreErrors'` _boolean_: Defaults to `true`.
+	 *        - `'followLocation'` _boolean_: Defaults to `true`.
+	 * @return void
 	 */
 	public function __construct(array $config = array()) {
 		$defaults = array(
@@ -103,23 +98,29 @@ class Request extends \lithium\net\http\Message {
 			'Connection' => 'Close',
 			'User-Agent' => 'Mozilla/5.0'
 		);
-		if ($type = $this->_config['type']) {
-			$this->type($type);
+		foreach (array('type', 'headers', 'cookies') as $field) {
+			if ($value = $this->_config[$field]) {
+				$this->{$field}($value);
+			}
 		}
-		$this->headers($this->_config['headers']);
-		$this->cookies($this->_config['cookies']);
+		if ($cookies = $this->headers('Cookie')) {
+			$this->_parseCookies($cookies);
+		}
 
 		$this->_formats += array(
 			'url' => function($req, $options) {
 				$options['port'] = $options['port'] ? ":{$options['port']}" : '';
 				$options['path'] = str_replace('//', '/', $options['path']);
+
 				return String::insert("{:scheme}://{:host}{:port}{:path}{:query}", $options);
 			},
 			'context' => function($req, $options, $defaults) {
+				$req->headers($options['headers']);
+
 				return array('http' => array_diff_key($options, $defaults) + array(
 					'content' => $req->body(),
 					'method' => $options['method'],
-					'header' => $req->headers($options['headers']),
+					'header' => $req->headers(),
 					'protocol_version' => $options['version'],
 					'ignore_errors' => $options['ignore_errors'],
 					'follow_location' => $options['follow_location'],
@@ -131,6 +132,7 @@ class Request extends \lithium\net\http\Message {
 				$body = $req->body();
 				$path = str_replace('//', '/', $options['path']) . $options['query'];
 				$status = "{$options['method']} {$path} {$req->protocol}";
+
 				return join("\r\n", array($status, join("\r\n", $req->headers()), "", $body));
 			}
 		);
@@ -192,8 +194,8 @@ class Request extends \lithium\net\http\Message {
 		$cookies = $this->cookies;
 		$invalid = str_split(",; \+\t\r\n\013\014");
 		$replace = array_map('rawurlencode', $invalid);
-		
-		foreach($cookies as $key => &$value) {
+
+		foreach ($cookies as $key => &$value) {
 			if (!is_scalar($value)) {
 				$message = "Non-scalar value cannot be rendered for cookie `{$key}`";
 				throw new UnexpectedValueException($message);
@@ -202,6 +204,19 @@ class Request extends \lithium\net\http\Message {
 			$value = "{$key}={$value}";
 		}
 		return implode('; ', $cookies);
+	}
+
+	/**
+	 * Parse `Cookie` header.
+	 *
+	 * @param string $header `Cookie` header.
+	 */
+	protected function _parseCookies($header) {
+		$cookies = array_map('trim', array_filter(explode('; ', $header)));
+		foreach ($cookies as $cookie) {
+			list($name, $value) = array_map('urldecode', explode('=', $cookie, 2)) + array('','');
+			$this->cookies($name, $value);
+		}
 	}
 
 	/**

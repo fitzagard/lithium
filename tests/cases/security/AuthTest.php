@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2009, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -77,8 +77,9 @@ class AuthTest extends \lithium\test\Unit {
 	public function testNoConfigurations() {
 		Auth::reset();
 		$this->assertIdentical(array(), Auth::config());
-		$this->expectException("Configuration `user` has not been defined.");
-		Auth::check('user');
+		$this->assertException("Configuration `user` has not been defined.", function() {
+			Auth::check('user');
+		});
 	}
 
 	public function testAuthPersist() {

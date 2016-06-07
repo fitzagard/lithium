@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -53,26 +53,22 @@ class Message extends \lithium\net\Message {
 	);
 
 	/**
-	 * Adds config values to the public properties when a new object is created.
+	 * Constructor. Adds config values to the public properties when a new object is created.
 	 *
-	 * @param array $config Configuration options : default value
-	 *        - `'protocol'` _string_: null
-	 *        - `'version'` _string_: '1.1'
-	 *        - `'scheme'` _string_: 'http'
-	 *        - `'host'` _string_: 'localhost'
-	 *        - `'port'` _integer_: null
-	 *        - `'username'` _string_: null
-	 *        - `'password'` _string_: null
-	 *        - `'path'` _string_: null
-	 *        - `'headers'` _array_: array()
-	 *        - `'body'` _mixed_: null
+	 * @see lithium\net\Message::__construct()
+	 * @param array $config The available configuration options are the following. Further
+	 *        options are inherited from the parent class.
+	 *        - `'protocol'` _string_: Defaults to `null`.
+	 *        - `'version'` _string_: Defaults to `'1.1'`.
+	 *        - `'scheme'` _string_: Overridden and defaulting to `'http'`.
+	 *        - `'headers'` _array_: Defaults to `array()`.
+	 * @return void
 	 */
 	public function __construct(array $config = array()) {
 		$defaults = array(
 			'protocol' => null,
 			'version' => '1.1',
 			'scheme' => 'http',
-			'host' => 'localhost',
 			'headers' => array()
 		);
 		$config += $defaults;
@@ -90,19 +86,119 @@ class Message extends \lithium\net\Message {
 	}
 
 	/**
-	 * Add a header to rendered output, or return a single header or full header list.
+	 * Adds, gets or removes one or multiple headers at the same time.
 	 *
-	 * @param string $key A header name, a full header line (`'Key: Value'`), or an array of headers
-	 *        to set in `key => value` form.
-	 * @param string $value A value to set if `$key` is a string. If `null`, returns the value of the
-	 *        header corresponding to `$key`. If `false`, it unsets the header corresponding to `$key`.
-	 * @param boolean $replace Whether to override or add alongside any existing header with the same
-	 *        name.
-	 * @return mixed The value of a single header, or an array of compiled headers in the form
-	 *         `'Key: Value'`.
+	 * Header names are not normalized and their casing left untouched. When
+	 * headers are retrieved no sorting takes place. This behavior is inline
+	 * with the specification which states header names should be treated in
+	 * a case-insensitive way. Sorting is suggested but not required.
+	 *
+	 * ```
+	 * // Get single or multiple headers.
+	 * $request->headers('Content-Type'); // returns 'text/plain'
+	 * $request->headers(); // returns array('Content-Type: text/plain', ... )
+	 *
+	 * // Set single or multiple headers.
+	 * $request->headers('Content-Type', 'text/plain');
+	 * $request->headers(array('Content-Type' => 'text/plain', ...));
+	 *
+	 * // Alternatively use full header line.
+	 * $request->headers('Content-Type: text/plain');
+	 * $request->headers(array('Content-Type: text/plain', ...));
+	 *
+	 * // Removing single or multiple headers.
+	 * $request->headers('Content-Type', false);
+	 * $request->headers(array('Content-Type' => false, ...));
+	 * ```
+	 *
+	 * Certain header fields support multiple values. These can be separated by
+	 * comma or alternatively the header repeated for each value in the list.
+	 *
+	 * When explicitly adding a value to an already existing header (that is when
+	 * $replace is `false`) an array with those values is kept/created internally.
+	 * Later when retrieving headers the header will be repeated for each value.
+	 *
+	 * Note: Multiple headers of the same name are only valid if the values of
+	 * that header can be separated by comma as defined in section 4.2 of RFC2616.
+	 *
+	 * ```
+	 * // Replace single or multiple headers
+	 * $request->headers('Cache-Control', 'no-store');
+	 * $request->headers(array('Cache-Control' => 'public'));
+	 * $request->headers('Cache-Control'); // returns 'public'
+	 *
+	 * // Merging with existing array headers.
+	 * // Note that new elements are just appended and no sorting takes place.
+	 * $request->headers('Cache-Control', 'no-store');
+	 * $request->headers('Cache-Control', 'no-cache', false);
+	 * $request->headers();
+	 * // returns array('Cache-Control: no-store', 'Cache-Control: no-cache')
+	 *
+	 * $request->headers('Cache-Control', 'no-store');
+	 * $request->headers('Cache-Control', array('no-cache'), false);
+	 * $request->headers();
+	 * // returns array('Cache-Control: no-store', 'Cache-Control: no-cache')
+	 *
+	 * $request->headers('Cache-Control', 'max-age=0');
+	 * $request->headers('Cache-Control', 'no-store, no-cache');
+	 * $request->headers();
+	 * // returns array('Cache-Control: no-store, no-cache')
+	 * ```
+	 *
+	 * @link http://www.ietf.org/rfc/rfc2616.txt Section 4.2 Message Headers
+	 * @param string|array $key A header name, a full header line (`'<key>: <value>'`), or an array
+	 *                      of headers to set in `key => value` form.
+	 * @param mixed $value A value to set if `$key` is a string.
+	 *              It can be an array to set multiple headers with the same key.
+	 *              If `null`, returns the value of the header corresponding to `$key`.
+	 *              If `false`, it unsets the header corresponding to `$key`.
+	 * @param boolean $replace Whether to override or add alongside any existing header with
+	 *                the same name.
+	 * @return mixed When called with just $key provided, the value of a single header or an array
+	 *         of values in case there is multiple headers with this key.
+	 *         When calling the method without any arguments, an array of compiled headers in the
+	 *         form `array('<key>: <value>', ...)` is returned. All set and replace operations
+	 *         return no value for performance reasons.
 	 */
 	public function headers($key = null, $value = null, $replace = true) {
-		if (!is_string($key)) {
+		if ($key === null && $value === null) {
+			$headers = array();
+
+			foreach ($this->headers as $key => $value) {
+				if (is_scalar($value)) {
+					$headers[] = "{$key}: {$value}";
+					continue;
+				}
+				foreach ($value as $val) {
+					$headers[] = "{$key}: {$val}";
+				}
+			}
+			return $headers;
+		}
+		if ($value === null && is_string($key) && strpos($key, ':') === false) {
+			return isset($this->headers[$key]) ? $this->headers[$key] : null;
+		}
+
+		if (is_string($key)) {
+			if (strpos($key, ':') !== false && preg_match('/(.*?):(.+)/', $key, $match)) {
+				$key = $match[1];
+				$value = trim($match[2]);
+			} elseif ($value === false) {
+				unset($this->headers[$key]);
+				return;
+			}
+			if ($replace || !isset($this->headers[$key])) {
+				$this->headers[$key] = $value;
+			} elseif ($value !== $this->headers[$key]) {
+				$this->headers[$key] = (array) $this->headers[$key];
+
+				if (is_string($value)) {
+					$this->headers[$key][] = $value;
+				} else {
+					$this->headers[$key] = array_merge($this->headers[$key], $value);
+				}
+			}
+		} else {
 			$replace = ($value === false) ? $value : $replace;
 
 			foreach ((array) $key as $header => $value) {
@@ -112,39 +208,7 @@ class Message extends \lithium\net\Message {
 				}
 				$this->headers($value, null, $replace);
 			}
-		} elseif ($key) {
-			if (strpos($key, ':') !== false) {
-				if (preg_match('/(.*?):(.+)/', $key, $match)) {
-					$this->headers($match[1], trim($match[2]), $replace);
-				}
-			} elseif ($value === null) {
-				return isset($this->headers[$key]) ? $this->headers[$key] : null;
-			} elseif ($value === false) {
-				unset($this->headers[$key]);
-			} elseif (!$replace && isset($this->headers[$key]) && $value != $this->headers[$key]) {
-				$this->headers[$key] = (array) $this->headers[$key];
-
-				if (is_string($value)) {
-					$this->headers[$key][] = $value;
-				} else {
-					$this->headers[$key] = array_merge($this->headers[$key], $value);
-				}
-			} else {
-				$this->headers[$key] = $value;
-			}
 		}
-		$headers = array();
-
-		foreach ($this->headers as $key => $value) {
-			if (is_scalar($value)) {
-				$headers[] = "{$key}: {$value}";
-				continue;
-			}
-			foreach ($value as $val) {
-				$headers[] = "{$key}: {$val}";
-			}
-		}
-		return $headers;
 	}
 
 	/**
@@ -201,12 +265,12 @@ class Message extends \lithium\net\Message {
 		$default = array('buffer' => null, 'encode' => false, 'decode' => false);
 		$options += $default;
 
-		if (!empty($data)) {
+		if ($data !== null) {
 			$this->body = array_merge((array) $this->body, (array) $data);
 		}
 		$body = $this->body;
 
-		if (empty($options['buffer']) && empty($body)) {
+		if (empty($options['buffer']) && $body === null) {
 			return "";
 		}
 		if ($options['encode']) {
@@ -230,8 +294,9 @@ class Message extends \lithium\net\Message {
 	protected function _encode($body) {
 		$media = $this->_classes['media'];
 
-		if ($type = $media::type($this->_type)) {
-			$body = $media::encode($this->_type, $body) ?: $body;
+		if ($media::type($this->_type)) {
+			$encoded = $media::encode($this->_type, $body);
+			$body = $encoded !== null ? $encoded : $body;
 		}
 		return $body;
 	}
@@ -246,8 +311,9 @@ class Message extends \lithium\net\Message {
 	protected function _decode($body) {
 		$media = $this->_classes['media'];
 
-		if ($type = $media::type($this->_type)) {
-			return $media::decode($this->_type, $body) ?: $body;
+		if ($media::type($this->_type)) {
+			$decoded = $media::decode($this->_type, $body);
+			$body = $decoded !== null ? $decoded : $body;
 		}
 		return $body;
 	}

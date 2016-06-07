@@ -2,7 +2,7 @@
 /**
  * Lithium: the most rad php framework
  *
- * @copyright     Copyright 2013, Union of RAD (http://union-of-rad.org)
+ * @copyright     Copyright 2016, Union of RAD (http://union-of-rad.org)
  * @license       http://opensource.org/licenses/bsd-license.php The BSD License
  */
 
@@ -11,7 +11,6 @@ namespace lithium\core;
 use lithium\core\Libraries;
 use lithium\util\collection\Filters;
 use lithium\analysis\Inspector;
-use Closure;
 
 /**
  * Base class in Lithium's hierarchy, from which all concrete classes inherit. This class defines
@@ -34,6 +33,7 @@ use Closure;
  *   call. Finally, the `_stop()` method may be used instead of `exit()`, as it can be overridden
  *   for testing purposes.
  *
+ * @link http://php.net/manual/en/language.oop5.magic.php#object.set-state
  * @see lithium\core\StaticObject
  */
 class Object {
@@ -76,16 +76,17 @@ class Object {
 	protected static $_parents = array();
 
 	/**
-	 * Initializes class configuration (`$_config`), and assigns object properties using the
-	 * `_init()` method, unless otherwise specified by configuration. See below for details.
+	 * Constructor. Initializes class configuration (`$_config`), and assigns object properties
+	 * using the `_init()` method, unless otherwise specified by configuration. See below for
+	 * details.
 	 *
 	 * @see lithium\core\Object::$_config
 	 * @see lithium\core\Object::_init()
 	 * @param array $config The configuration options which will be assigned to the `$_config`
-	 *              property. This method accepts one configuration option:
-	 *              - `'init'` _boolean_: Controls constructor behavior for calling the `_init()`
-	 *                method. If `false`, the method is not called, otherwise it is. Defaults to
-	 *                `true`.
+	 *        property. This method accepts one configuration option:
+	 *        - `'init'` _boolean_: Controls constructor behavior for calling the `_init()`
+	 *          method. If `false`, the method is not called, otherwise it is. Defaults to `true`.
+	 * @return void
 	 */
 	public function __construct(array $config = array()) {
 		$defaults = array('init' => true);
@@ -103,14 +104,15 @@ class Object {
 	 * constructor provides. Additionally, this method iterates over the `$_autoConfig` property
 	 * to automatically assign configuration settings to their corresponding properties.
 	 *
-	 * For example, given the following: {{{
+	 * For example, given the following:
+	 * ```
 	 * class Bar extends \lithium\core\Object {
 	 * 	protected $_autoConfig = array('foo');
 	 * 	protected $_foo;
 	 * }
 	 *
 	 * $instance = new Bar(array('foo' => 'value'));
-	 * }}}
+	 * ```
 	 *
 	 * The `$_foo` property of `$instance` would automatically be set to `'value'`. If `$_foo` was
 	 * an array, `$_autoConfig` could be set to `array('foo' => 'merge')`, and the constructor value
@@ -141,7 +143,7 @@ class Object {
 	 * @param mixed $method The name of the method to apply the closure to. Can either be a single
 	 *        method name as a string, or an array of method names. Can also be false to remove
 	 *        all filters on the current object.
-	 * @param Closure $filter The closure that is used to filter the method(s), can also be false
+	 * @param \Closure $filter The closure that is used to filter the method(s), can also be false
 	 *        to remove all the current filters for the given method.
 	 * @return void
 	 */
@@ -208,11 +210,13 @@ class Object {
 	}
 
 	/**
-	 * Will determine if a method can be called.
+	 * Determines if a given method can be called.
 	 *
-	 * @param  string  $method     Method name.
-	 * @param  bool    $internal   Interal call or not.
-	 * @return bool
+	 * @param string $method Name of the method.
+	 * @param boolean $internal Provide `true` to perform check from inside the
+	 *                class/object. When `false` checks also for public visibility;
+	 *                defaults to `false`.
+	 * @return boolean Returns `true` if the method can be called, `false` otherwise.
 	 */
 	public function respondsTo($method, $internal = false) {
 		return Inspector::isCallable($this, $method, $internal);
@@ -247,7 +251,7 @@ class Object {
 	 *               `__METHOD__`.
 	 * @param array $params An associative array containing all the parameters passed into
 	 *              the method.
-	 * @param Closure $callback The method's implementation, wrapped in a closure.
+	 * @param \Closure $callback The method's implementation, wrapped in a closure.
 	 * @param array $filters Additional filters to apply to the method for this call only.
 	 * @return mixed Returns the return value of `$callback`, modified by any filters passed in
 	 *         `$filters` or applied with `applyFilter()`.
