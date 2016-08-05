@@ -918,6 +918,14 @@ class MongoDbTest extends \lithium\test\Unit {
 	}
 
 	public function testSetReadPreference() {
+		$db = new MongoDb(array(
+			'autoConnect' => true,
+			'database' => 'temp1',
+			'classes' => array(
+				'server' => 'lithium\tests\mocks\data\source\MockMongoConnection'
+			)
+		));
+		$this->assertEqual($db->server->temp1->getReadPreference(), ['primary', []]);
 		$prefs = array(
 			"SECONDARY",
 			array('dc' => 'east', 'use' => 'reporting')
@@ -925,14 +933,12 @@ class MongoDbTest extends \lithium\test\Unit {
 		$db = new MongoDb(array(
 			'autoConnect' => true,
 			'readPreference' => $prefs,
+			'database' => 'temp2',
 			'classes' => array(
-				'server' => 'lithium\tests\mocks\core\MockCallable'
+				'server' => 'lithium\tests\mocks\data\source\MockMongoConnection'
 			)
 		));
-
-		$result = $db->server->call;
-		$this->assertEqual('setReadPreference', $result['method']);
-		$this->assertEqual($prefs, $result['params']);
+		$this->assertEqual($db->server->temp2->getReadPreference(), array('SECONDARY', array('dc' => 'east', 'use' => 'reporting')));
 	}
 
 	public function testDefaultSafeOptions() {

@@ -20,6 +20,8 @@ class MockMongoConnection {
 
 	public $gridFsPrefix = null;
 
+	public $readPreference = ['primary', []];
+
 	public function connect() {
 		return false;
 	}
@@ -76,6 +78,14 @@ class MockMongoConnection {
 
 	public function storeBytes($bytes = null, array $extra = array(), array $options = array()) {
 		return;
+	}
+
+	public function getReadPreference(){
+		return $this->readPreference;
+	}
+
+	public function setReadPreference($method = 'primary', $params = array()) {
+		return $this->readPreference = [$method, $params];
 	}
 }
 
