@@ -2,7 +2,7 @@
 /**
  * li₃: the most RAD framework for PHP (http://li3.me)
  *
- * Copyright 2016, Union of RAD. All rights reserved. This source
+ * Copyright 2009, Union of RAD. All rights reserved. This source
  * code is distributed under the terms of the BSD 3-Clause License.
  * The full license text can be found in the LICENSE.txt file.
  */
@@ -500,6 +500,23 @@ class RequestTest extends \lithium\test\Unit {
 
 		$request = new Request(['env' => ['HTTP_USER_AGENT' => $android]]);
 		$this->assertTrue($request->is('mobile'));
+	}
+
+	public function testIsDNT() {
+		$request = new Request(['env' => ['HTTP_DNT' => '1']]);
+		$this->assertTrue($request->is('dnt'));
+
+		$request = new Request(['env' => ['HTTP_DNT' => '0']]);
+		$this->assertFalse($request->is('dnt'));
+
+		$request = new Request(['env' => ['HTTP_DNT' => 'invalid']]);
+		$this->assertFalse($request->is('dnt'));
+
+		$request = new Request(['env' => ['HTTP_DNT' => 'true']]);
+		$this->assertFalse($request->is('dnt'));
+
+		$request = new Request(['env' => []]);
+		$this->assertFalse($request->is('dnt'));
 	}
 
 	public function testType() {

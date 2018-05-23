@@ -2,7 +2,7 @@
 /**
  * li₃: the most RAD framework for PHP (http://li3.me)
  *
- * Copyright 2016, Union of RAD. All rights reserved. This source
+ * Copyright 2009, Union of RAD. All rights reserved. This source
  * code is distributed under the terms of the BSD 3-Clause License.
  * The full license text can be found in the LICENSE.txt file.
  */
@@ -54,14 +54,6 @@ class Object {
 	 * @var array
 	 */
 	protected $_autoConfig = [];
-
-	/**
-	 * Parents of the current class.
-	 *
-	 * @see lithium\core\Object::_parents()
-	 * @var array
-	 */
-	protected static $_parents = [];
 
 	/**
 	 * Constructor. Initializes class configuration (`$_config`), and assigns object properties
@@ -152,25 +144,6 @@ class Object {
 	}
 
 	/**
-	 * PHP magic method used in conjunction with `var_export()` to allow objects to be
-	 * re-instantiated with their pre-existing properties and values intact. This method can be
-	 * called statically on any class that extends `Object` to return an instance of it.
-	 *
-	 * @param array $data An array of properties and values with which to re-instantiate the object.
-	 *        These properties can be both public and protected.
-	 * @return object Returns an instance of the requested object with the given properties set.
-	 */
-	public static function __set_state($data) {
-		$class = get_called_class();
-		$object = new $class();
-
-		foreach ($data as $property => $value) {
-			$object->{$property} = $value;
-		}
-		return $object;
-	}
-
-	/**
 	 * Determines if a given method can be called.
 	 *
 	 * @param string $method Name of the method.
@@ -199,104 +172,67 @@ class Object {
 		return Libraries::instance(null, $name, $options);
 	}
 
-	/**
-	 * Gets and caches an array of the parent methods of a class.
-	 *
-	 * @return array Returns an array of parent classes for the current class.
-	 */
-	protected static function _parents() {
-		$class = get_called_class();
+	/* Deprecated / BC */
 
-		if (!isset(static::$_parents[$class])) {
-			static::$_parents[$class] = class_parents($class);
+	/**
+	 * Parents of the current class.
+	 *
+	 * @deprecated
+	 * @see lithium\core\Object::_parents()
+	 * @var array
+	 */
+	protected static $_parents = [];
+
+	/**
+	 * PHP magic method used in conjunction with `var_export()` to allow objects to be
+	 * re-instantiated with their pre-existing properties and values intact. This method can be
+	 * called statically on any class that extends `Object` to return an instance of it.
+	 *
+	 * @deprecated
+	 * @param array $data An array of properties and values with which to re-instantiate the object.
+	 *        These properties can be both public and protected.
+	 * @return object Returns an instance of the requested object with the given properties set.
+	 */
+	public static function __set_state($data) {
+		$class = get_called_class();
+		$object = new $class();
+
+		foreach ($data as $property => $value) {
+			$object->{$property} = $value;
 		}
-		return static::$_parents[$class];
+		return $object;
 	}
 
 	/**
 	 * Exit immediately. Primarily used for overrides during testing.
 	 *
+	 * @deprecated
 	 * @param integer|string $status integer range 0 to 254, string printed on exit
 	 * @return void
 	 */
 	protected function _stop($status = 0) {
+		$message  = '`' . __METHOD__ . '()` has been deprecated.';
+		trigger_error($message, E_USER_DEPRECATED);
 		exit($status);
 	}
 
-	/* Deprecated / BC */
-
 	/**
-	 * Contains a 2-dimensional array of filters applied to this object's methods, indexed by method
-	 * name. See the associated methods for more details.
+	 * Gets and caches an array of the parent methods of a class.
 	 *
-	 * @deprecated Not used anymore.
-	 * @see lithium\core\Object::_filter()
-	 * @see lithium\core\Object::applyFilter()
-	 * @var array
+	 * @deprecated
+	 * @return array Returns an array of parent classes for the current class.
 	 */
-	protected $_methodFilters = [];
-
-	/**
-	 * Apply a closure to a method of the current object instance.
-	 *
-	 * @deprecated Replaced by `\lithium\aop\Filters::apply()` and `::clear()`.
-	 * @see lithium\core\Object::_filter()
-	 * @see lithium\util\collection\Filters
-	 * @param mixed $method The name of the method to apply the closure to. Can either be a single
-	 *        method name as a string, or an array of method names. Can also be false to remove
-	 *        all filters on the current object.
-	 * @param \Closure $filter The closure that is used to filter the method(s), can also be false
-	 *        to remove all the current filters for the given method.
-	 * @return void
-	 */
-	public function applyFilter($method, $filter = null) {
-		$message  = '`' . __METHOD__ . '()` has been deprecated in favor of ';
-		$message .= '`\lithium\aop\Filters::apply()` and `::clear()`.';
+	protected static function _parents() {
+		$message  = '`' . __METHOD__ . '()` has been deprecated. For property merging ';
+		$message .= 'use `\lithium\core\MergeInheritable::_inherit()`';
 		trigger_error($message, E_USER_DEPRECATED);
 
-		if ($method === false) {
-			Filters::clear($this);
-			return;
-		}
-		foreach ((array) $method as $m) {
-			if ($filter === false) {
-				Filters::clear($this, $m);
-			} else {
-				Filters::apply($this, $m, $filter);
-			}
-		}
-	}
+		$class = get_called_class();
 
-	/**
-	 * Executes a set of filters against a method by taking a method's main implementation as a
-	 * callback, and iteratively wrapping the filters around it. This, along with the `Filters`
-	 * class, is the core of Lithium's filters system. This system allows you to "reach into" an
-	 * object's methods which are marked as _filterable_, and intercept calls to those methods,
-	 * optionally modifying parameters or return values.
-	 *
-	 * @deprecated Replaced by `\lithium\aop\Filters::run()`.
-	 * @see lithium\core\Object::applyFilter()
-	 * @see lithium\util\collection\Filters
-	 * @param string $method The name of the method being executed, usually the value of
-	 *               `__METHOD__`.
-	 * @param array $params An associative array containing all the parameters passed into
-	 *              the method.
-	 * @param \Closure $callback The method's implementation, wrapped in a closure.
-	 * @param array $filters Additional filters to apply to the method for this call only.
-	 * @return mixed Returns the return value of `$callback`, modified by any filters passed in
-	 *         `$filters` or applied with `applyFilter()`.
-	 */
-	protected function _filter($method, $params, $callback, $filters = []) {
-		$message  = '`' . __METHOD__ . '()` has been deprecated in favor of ';
-		$message .= '`\lithium\aop\Filters::run()` and `::apply()`.';
-		trigger_error($message, E_USER_DEPRECATED);
-
-		list(, $method) = explode('::', $method);
-
-		foreach ($filters as $filter) {
-			Filters::apply($this, $method, $filter);
+		if (!isset(self::$_parents[$class])) {
+			static::$_parents[$class] = class_parents($class);
 		}
-		return Filters::run($this, $method, $params, $callback);
+		return static::$_parents[$class];
 	}
 }
 

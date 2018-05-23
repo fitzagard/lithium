@@ -1,11 +1,12 @@
 #
 # li₃: the most RAD framework for PHP (http://li3.me)
 #
-# Copyright 2016, Union of RAD. All rights reserved. This source
+# Copyright 2012, Union of RAD. All rights reserved. This source
 # code is distributed under the terms of the BSD 3-Clause License.
 # The full license text can be found in the LICENSE.txt file.
 #
 
+sudo: false
 language: php
 
 services:
@@ -13,6 +14,12 @@ services:
   - memcache
   - couchdb
   - redis
+addons:
+  apt:
+    sources:
+      - mongodb-3.4-trusty
+    packages:
+      - mongodb-org-server
 
 env:
   # Run one build with as many enabled and compatible extensions as possible.
@@ -22,47 +29,21 @@ env:
   - DB=mysql TESTS=data
   - DB=pgsql TESTS=data
   - DB=couchdb TESTS=data
-  # for mongodb tests see matrix definitions
+  - DB=mongodb PHP_EXT=mongodb TESTS=data
 
 php:
-  - 5.5
-  - 5.6
   - 7.0
   - 7.1
 
 matrix:
   exclude:
   include:
-    # `mongo` extension is not supported on PHP 7
-    - php: 5.5
-      env: DB=mongodb PHP_EXT=mongo TESTS=data
-    - php: 5.6
-      env: DB=mongodb PHP_EXT=mongo TESTS=data
-    - php: 7.0
-      env: DB=mongodb PHP_EXT=mongodb COMPOSER_PKG=alcaeus/mongo-php-adapter TESTS=data
-    - php: 7.1
-      env: DB=mongodb PHP_EXT=mongodb COMPOSER_PKG=alcaeus/mongo-php-adapter TESTS=data
-    # XCache is not supported on PHP 7
-    # Must be tested in isolation as it interferes with other opcaches.
-    - php: 5.5
-      env: PHP_EXT=xcache TESTS=storage
-    - php: 5.6
-      env: PHP_EXT=xcache TESTS=storage
     # Just one exemplaric job.
-    - php: hhvm
-      env: PHP_EXT=memcached TESTS=all
     - php: nightly
       env: PHP_EXT=memcached TESTS=all
   allow_failures:
-    # We do not aim for full HHVM compatibilty now.
-    - php: hhvm
-      env: PHP_EXT=memcached TESTS=all
     - php: nightly
       env: PHP_EXT=memcached TESTS=all
-    - php: 7.0
-      env: DB=mongodb PHP_EXT=mongodb COMPOSER_PKG=alcaeus/mongo-php-adapter TESTS=data
-    - php: 7.1
-      env: DB=mongodb PHP_EXT=mongodb COMPOSER_PKG=alcaeus/mongo-php-adapter TESTS=data
   # Mark build as failed as soon as one job failed.
   fast_finish: true
 
@@ -78,6 +59,7 @@ before_script:
   - php libraries/lithium/tests/ci/depends.php
   - sh -c "if [ '$DB' = 'mysql' ]; then mysql -e 'create database lithium_test; create database lithium_test_alternative;'; fi"
   - sh -c "if [ '$DB' = 'pgsql' ]; then psql -c 'create database lithium_test;' -U postgres; psql -c 'create database lithium_test_alternative;' -U postgres; fi"
+  - sh -c "if [ '$DB' = 'mongodb' ]; then mongod --version; fi"
 
 script:
   # Run all tests.

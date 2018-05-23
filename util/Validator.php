@@ -2,7 +2,7 @@
 /**
  * li₃: the most RAD framework for PHP (http://li3.me)
  *
- * Copyright 2016, Union of RAD. All rights reserved. This source
+ * Copyright 2009, Union of RAD. All rights reserved. This source
  * code is distributed under the terms of the BSD 3-Clause License.
  * The full license text can be found in the LICENSE.txt file.
  */
@@ -191,7 +191,7 @@ class Validator extends \lithium\core\StaticObject {
 				'enroute'  => '/^2(?:014|149)\\d{11}$/',
 				'jcb'      => '/^(3\\d{4}|2100|1800)\\d{11}$/',
 				'maestro'  => '/^(?:5020|6\\d{3})\\d{12}$/',
-				'mc'       => '/^5[1-5]\\d{14}$/',
+				'mc'       => '/^(?:5[1-5]|2[2-7])\\d{14}$/',
 				'solo'     => '/^(6334[5-9][0-9]|6767[0-9]{2})\\d{10}(\\d{2,3})?$/',
 				'switch'   => '/^(?:49(03(0[2-9]|3[5-9])|11(0[1-2]|7[4-9]|8[1-2])|36[0-9]{2})' .
 				              '\\d{10}(\\d{2,3})?)|(?:564182\\d{10}(\\d{2,3})?)|(6(3(33[0-4]' .

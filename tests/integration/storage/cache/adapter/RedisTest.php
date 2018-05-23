@@ -2,7 +2,7 @@
 /**
  * li₃: the most RAD framework for PHP (http://li3.me)
  *
- * Copyright 2016, Union of RAD. All rights reserved. This source
+ * Copyright 2009, Union of RAD. All rights reserved. This source
  * code is distributed under the terms of the BSD 3-Clause License.
  * The full license text can be found in the LICENSE.txt file.
  */
@@ -30,15 +30,9 @@ class RedisTest extends \lithium\test\Integration {
 
 	/**
 	 * Skip the test if the Redis extension is unavailable.
-	 *
-	 * @link https://github.com/facebook/hhvm/commit/34de1a279b3b66458ff980d12ef347022f2def04
 	 */
 	public function skip() {
 		$this->skipIf(!Redis::enabled(), 'The redis extension is not installed.');
-		$this->skipIf(
-			defined('HHVM_VERSION') && version_compare(HHVM_VERSION, '3.10', '<'),
-			'Cannot reliably run redis test on HHVM < 3.110 due to HHVM bug.'
-		);
 
 		$redis = new RedisCore();
 		$cfg = $this->_config;
@@ -581,7 +575,7 @@ class RedisTest extends \lithium\test\Integration {
 	}
 
 	public function testRespondsToParentCall() {
-		$this->assertTrue($this->redis->respondsTo('applyFilter'));
+		$this->assertTrue($this->redis->respondsTo('invokeMethod'));
 		$this->assertFalse($this->redis->respondsTo('fooBarBaz'));
 	}
 }

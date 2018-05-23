@@ -2,7 +2,7 @@
 /**
  * li₃: the most RAD framework for PHP (http://li3.me)
  *
- * Copyright 2016, Union of RAD. All rights reserved. This source
+ * Copyright 2009, Union of RAD. All rights reserved. This source
  * code is distributed under the terms of the BSD 3-Clause License.
  * The full license text can be found in the LICENSE.txt file.
  */
@@ -208,24 +208,6 @@ class ResponseTest extends \lithium\test\Unit {
 		if ($url === ['controller' => 'foo_bar', 'action' => 'index']) {
 			return '/foo_bar';
 		}
-	}
-
-	/* Deprecated / BC */
-
-	/**
-	 * Tests custom header add-ons, like 'download'.
-	 */
-	public function testDownloadMagicHeader() {
-		$backup = error_reporting();
-		error_reporting(E_ALL);
-
-		$response = $this->response;
-
-		$this->assertException('/deprecated/', function() use ($response) {
-			$response->headers('download', 'report.csv');
-		});
-
-		error_reporting($backup);
 	}
 }
 

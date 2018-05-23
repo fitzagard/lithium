@@ -2,7 +2,7 @@
 /**
  * li₃: the most RAD framework for PHP (http://li3.me)
  *
- * Copyright 2016, Union of RAD. All rights reserved. This source
+ * Copyright 2009, Union of RAD. All rights reserved. This source
  * code is distributed under the terms of the BSD 3-Clause License.
  * The full license text can be found in the LICENSE.txt file.
  */
@@ -422,6 +422,16 @@ class Command extends \lithium\core\Object {
 			$string = $string . $this->nl((integer) $options['nl']);
 		}
 		return $this->response->{$type}($string);
+	}
+
+	/**
+	 * Exit immediately. Primarily used for overrides during testing.
+	 *
+	 * @param integer|string $status integer range 0 to 254, string printed on exit
+	 * @return void
+	 */
+	protected function _stop($status = 0) {
+		exit($status);
 	}
 }
 

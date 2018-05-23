@@ -2,7 +2,7 @@
 /**
  * li₃: the most RAD framework for PHP (http://li3.me)
  *
- * Copyright 2016, Union of RAD. All rights reserved. This source
+ * Copyright 2009, Union of RAD. All rights reserved. This source
  * code is distributed under the terms of the BSD 3-Clause License.
  * The full license text can be found in the LICENSE.txt file.
  */
@@ -87,6 +87,7 @@ class Response extends \lithium\net\http\Message {
 		422 => 'Unprocessable Entity',
 		423 => 'Locked',
 		424 => 'Method Failure',
+		426 => 'Upgrade Required',
 		428 => 'Precondition Required',
 		429 => 'Too Many Requests',
 		431 => 'Request Header Fields Too Large',

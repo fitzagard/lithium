@@ -2,7 +2,7 @@
 /**
  * li₃: the most RAD framework for PHP (http://li3.me)
  *
- * Copyright 2016, Union of RAD. All rights reserved. This source
+ * Copyright 2009, Union of RAD. All rights reserved. This source
  * code is distributed under the terms of the BSD 3-Clause License.
  * The full license text can be found in the LICENSE.txt file.
  */
@@ -1625,19 +1625,6 @@ class Unit extends \lithium\core\Object {
 				$this->_handleException($e);
 			}
 		});
-
-		foreach ($this->_expected as $expected) {
-			$this->_result('fail', compact('method') + [
-				'class' => get_class($this),
-				'message' => "Expected exception matching `{$expected}` uncaught.",
-				'data' => [],
-				'file' => null,
-				'line' => null,
-				'assertion' => 'expectException'
-			]);
-		}
-		$this->_expected = [];
-
 		try {
 			$this->tearDown();
 		} catch (Exception $e) {
@@ -1704,13 +1691,6 @@ class Unit extends \lithium\core\Object {
 	 */
 	protected function _reportException($exception, $lineFlag = null) {
 		$message = $exception['message'];
-
-		$isExpected = (($exp = end($this->_expected)) && ($exp === true || $exp === $message || (
-			Validator::isRegex($exp) && preg_match($exp, $message)
-		)));
-		if ($isExpected) {
-			return array_pop($this->_expected);
-		}
 		$initFrame = current($exception['trace']) + ['class' => '-', 'function' => '-'];
 
 		foreach ($exception['trace'] as $frame) {
@@ -1981,34 +1961,6 @@ class Unit extends \lithium\core\Object {
 			$result = preg_replace('/\r\n/', "\n", $result);
 		}
 		return [$expected, $result];
-	}
-
-	/* Deprecated */
-
-	/**
-	 * The list of expected exceptions.
-	 *
-	 * @deprecated
-	 * @var string
-	 */
-	protected $_expected = [];
-
-	/**
-	 * Used before a call to `assert*()` if you expect the test assertion to generate an exception
-	 * or PHP error.  If no error or exception is thrown, a test failure will be reported.  Can
-	 * be called multiple times per assertion, if more than one error is expected.
-	 *
-	 * @deprecated
-	 * @param mixed $message A string indicating what the error text is expected to be.  This can
-	 *              be an exact string, a /-delimited regular expression, or true, indicating that
-	 *              any error text is acceptable.
-	 * @return void
-	 */
-	public function expectException($message = true) {
-		$message = "Unit::expectException() is deprecated in favor of Unit::assertException().";
-		 trigger_error($message, E_USER_DEPRECATED);
-
-		$this->_expected[] = $message;
 	}
 }
 

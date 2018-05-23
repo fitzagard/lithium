@@ -2,7 +2,7 @@
 /**
  * li₃: the most RAD framework for PHP (http://li3.me)
  *
- * Copyright 2016, Union of RAD. All rights reserved. This source
+ * Copyright 2009, Union of RAD. All rights reserved. This source
  * code is distributed under the terms of the BSD 3-Clause License.
  * The full license text can be found in the LICENSE.txt file.
  */
@@ -81,6 +81,36 @@ class File extends \lithium\storage\cache\Adapter {
 			'streams' => false
 		];
 		parent::__construct($config + $defaults);
+	}
+
+	/**
+	 * Generates safe cache keys.
+	 *
+	 * Keys should be safe to be used as filename. So we conservatively disallalow
+	 * any non alphanumeric characters with the exception of dash und underscore.
+	 *
+	 * We also limit to max. 255 characters. The limit is actually lowered
+	 * to 255 minus the length of an crc32b hash minus separator (246)
+	 * minus scope length minus separator (246 - x).
+	 *
+	 * 255 was chosen as most commonly used filesystems (ext2-4, HFS+,
+	 * NTFS, XFS, FAT32, btrfs) limit filename characters to a length of
+	 * 255.
+	 *
+	 * @link https://en.wikipedia.org/wiki/Comparison_of_file_systems#Limits
+	 * @param array $keys The original keys.
+	 * @return array Keys modified and safe to use with adapter.
+	 */
+	public function key(array $keys) {
+		$length = 246 - ($this->_config['scope'] ? strlen($this->_config['scope']) + 1 : 0);
+
+		return array_map(
+			function($key) use ($length) {
+				$result = substr(preg_replace('/[^a-z0-9_\-]/iu', '_', $key), 0, $length);
+				return $result !== $key ? $result . '_' . hash('crc32b', $key) : $result;
+			},
+			$keys
+		);
 	}
 
 	/**

@@ -2,7 +2,7 @@
 /**
  * li₃: the most RAD framework for PHP (http://li3.me)
  *
- * Copyright 2016, Union of RAD. All rights reserved. This source
+ * Copyright 2009, Union of RAD. All rights reserved. This source
  * code is distributed under the terms of the BSD 3-Clause License.
  * The full license text can be found in the LICENSE.txt file.
  */
@@ -19,6 +19,16 @@ use lithium\tests\mocks\core\MockObjectConfiguration;
 use lithium\tests\mocks\core\MockInstantiator;
 
 class ObjectTest extends \lithium\test\Unit {
+
+	protected $_backup = null;
+
+	public function setUp() {
+		error_reporting(($this->_backup = error_reporting()) & ~E_USER_DEPRECATED);
+	}
+
+	public function tearDown() {
+		error_reporting($this->_backup);
+	}
 
 	/**
 	 * Tests that the correct parameters are always passed in Object::invokeMethod(), regardless of
@@ -75,16 +85,6 @@ class ObjectTest extends \lithium\test\Unit {
 		$this->assertEqual($result['params'], $expected);
 	}
 
-	public function testParents() {
-		$expected = ['lithium\core\Object' => 'lithium\core\Object'];
-
-		$result = MockObjectForParents::parents();
-		$this->assertEqual($expected, $result);
-
-		$result = MockObjectForParents::parents();
-		$this->assertEqual($expected, $result);
-	}
-
 	/**
 	 * Test configuration handling
 	 */
@@ -101,19 +101,6 @@ class ObjectTest extends \lithium\test\Unit {
 			'testScalar', 'testArray' => 'merge'
 		]] + $expected);
 		$this->assertEqual($expected, $config->getConfig());
-	}
-
-	/**
-	 * Tests that an object can be instantiated using the magic `__set_state()` method.
-	 */
-	public function testStateBasedInstantiation() {
-		$result = MockObjectConfiguration::__set_state([
-			'key' => 'value', '_protected' => 'test'
-		]);
-		$expected = 'lithium\tests\mocks\core\MockObjectConfiguration';
-		$this->assertEqual($expected, get_class($result));
-
-		$this->assertEqual('test', $result->getProtected());
 	}
 
 	public function testInstanceWithClassesKey() {
@@ -159,155 +146,29 @@ class ObjectTest extends \lithium\test\Unit {
 
 	/* Deprecated / BC */
 
-	public function testMethodFiltering() {
-		error_reporting(($original = error_reporting()) & ~E_USER_DEPRECATED);
+	public function testParents() {
+		$expected = ['lithium\core\Object' => 'lithium\core\Object'];
 
-		$test = new MockMethodFiltering();
-		$result = $test->method(['Starting test']);
-		$expected = [
-			'Starting test',
-			'Starting outer method call',
-			'Inside method implementation',
-			'Ending outer method call'
-		];
+		$result = MockObjectForParents::parents();
 		$this->assertEqual($expected, $result);
 
-		$test->applyFilter('method', function($self, $params, $chain) {
-			$params['data'][] = 'Starting filter';
-			$result = $chain->next($self, $params, $chain);
-			$result[] = 'Ending filter';
-			return $result;
-		});
-
-		$result = $test->method(['Starting test']);
-		$expected = [
-			'Starting test',
-			'Starting outer method call',
-			'Starting filter',
-			'Inside method implementation',
-			'Ending filter',
-			'Ending outer method call'
-		];
+		$result = MockObjectForParents::parents();
 		$this->assertEqual($expected, $result);
-
-		$test->applyFilter('method', function($self, $params, $chain) {
-			$params['data'][] = 'Starting inner filter';
-			$result = $chain->next($self, $params, $chain);
-			$result[] = 'Ending inner filter';
-			return $result;
-		});
-		$result = $test->method(['Starting test']);
-		$expected = [
-			'Starting test',
-			'Starting outer method call',
-			'Starting filter',
-			'Starting inner filter',
-			'Inside method implementation',
-			'Ending inner filter',
-			'Ending filter',
-			'Ending outer method call'
-		];
-		$this->assertEqual($expected, $result);
-
-		Filters::clear('lithium\tests\mocks\core\MockMethodFiltering');
-		error_reporting($original);
 	}
 
 	/**
-	 * Verifies workaround for accessing protected properties in filtered methods.
+	 * Tests that an object can be instantiated using the magic `__set_state()` method.
+	 *
+	 * @deprecated
 	 */
-	public function testFilteringWithProtectedAccess() {
-		error_reporting(($original = error_reporting()) & ~E_USER_DEPRECATED);
+	public function testStateBasedInstantiation() {
+		$result = MockObjectConfiguration::__set_state([
+			'key' => 'value', '_protected' => 'test'
+		]);
+		$expected = 'lithium\tests\mocks\core\MockObjectConfiguration';
+		$this->assertEqual($expected, get_class($result));
 
-		$object = new MockExposed();
-		$this->assertEqual($object->get(), 'secret');
-		$this->assertTrue($object->tamper());
-		$this->assertEqual($object->get(), 'tampered');
-
-		error_reporting($original);
-	}
-
-	/**
-	 * Attaches a single filter to multiple methods.
-	 */
-	public function testMultipleMethodFiltering() {
-		error_reporting(($original = error_reporting()) & ~E_USER_DEPRECATED);
-
-		$object = new MockMethodFiltering();
-
-		$count = 0;
-		$object->applyFilter(['method', 'method2'], function($s, $p, $c) use (&$count) {
-			$count++;
-			return $c->next($s, $p, $c);
-		});
-		$object->method(['foo' => 'bar']);
-		$object->method2();
-
-		$this->assertIdentical(2, $count);
-
-		Filters::clear('lithium\tests\mocks\core\MockMethodFiltering');
-		error_reporting($original);
-	}
-
-	public function testResetMethodFilter() {
-		error_reporting(($original = error_reporting()) & ~E_USER_DEPRECATED);
-
-		$obj = new MockMethodFiltering();
-		$obj->applyFilter(false);
-		$obj->applyFilter('method2', function($self, $params, $chain) {
-			return false;
-		});
-
-		$this->assertFalse($obj->method2());
-
-		$obj->applyFilter('method2', false);
-
-		$this->assertNotIdentical($obj->method2(), false);
-
-		Filters::clear('lithium\tests\mocks\core\MockMethodFiltering');
-		error_reporting($original);
-	}
-
-	public function testResetMultipleFilters() {
-		error_reporting(($original = error_reporting()) & ~E_USER_DEPRECATED);
-
-		$obj = new MockMethodFiltering();
-		$obj->applyFilter(false);
-		$obj->applyFilter(['method2', 'manual'], function($self, $params, $chain) {
-			return false;
-		});
-
-		$this->assertFalse($obj->method2());
-		$this->assertFalse($obj->manual([]));
-
-		$obj->applyFilter('method2', false);
-
-		$this->assertNotIdentical($obj->method2(), false);
-		$this->assertFalse($obj->manual([]));
-
-		Filters::clear('lithium\tests\mocks\core\MockMethodFiltering');
-		error_reporting($original);
-	}
-
-	public function testResetClass() {
-		error_reporting(($original = error_reporting()) & ~E_USER_DEPRECATED);
-
-		$obj = new MockMethodFiltering();
-		$obj->applyFilter(false);
-		$obj->applyFilter(['method2', 'manual'], function($self, $params, $chain) {
-			return false;
-		});
-
-		$this->assertFalse($obj->method2());
-		$this->assertFalse($obj->manual([]));
-
-		$obj->applyFilter(false);
-
-		$this->assertNotIdentical($obj->method2(), false);
-		$this->assertNotIdentical($obj->manual([]), false);
-
-		Filters::clear('lithium\tests\mocks\core\MockMethodFiltering');
-		error_reporting($original);
+		$this->assertEqual('test', $result->getProtected());
 	}
 }
 

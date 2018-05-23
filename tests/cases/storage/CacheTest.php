@@ -2,7 +2,7 @@
 /**
  * li₃: the most RAD framework for PHP (http://li3.me)
  *
- * Copyright 2016, Union of RAD. All rights reserved. This source
+ * Copyright 2009, Union of RAD. All rights reserved. This source
  * code is distributed under the terms of the BSD 3-Clause License.
  * The full license text can be found in the LICENSE.txt file.
  */
@@ -56,26 +56,68 @@ class CacheTest extends \lithium\test\Unit {
 		$this->assertEqual($expected, $result);
 	}
 
-	public function testkeyNoContext() {
+	public function testKeyNoop() {
+		Cache::config(['default' => ['adapter' => 'Memory']]);
+
 		$key = 'this is a cache key';
 
-		$result = Cache::key($key);
+		$result = Cache::key('default', $key);
 		$expected = 'this is a cache key';
 		$this->assertIdentical($expected, $result);
 
 		$key = '1120-cache éë';
 
-		$result = Cache::key($key);
+		$result = Cache::key('default', $key);
 		$expected = '1120-cache éë';
+		$this->assertIdentical($expected, $result);
+
+		$result = Cache::key('default', 'foo');
+		$expected = 'foo';
+		$this->assertIdentical($expected, $result);
+
+		$result = Cache::key('default', ['foo', 'bar']);
+		$expected = ['foo', 'bar'];
+		$this->assertIdentical($expected, $result);
+
+		$result = Cache::key('default', ['foo' => 'bar', 'baz' => 'boo']);
+		$expected = ['foo' => 'bar', 'baz' => 'boo'];
 		$this->assertIdentical($expected, $result);
 	}
 
-	public function testKeyWithLambda() {
+	public function testKeyWithDataHash() {
+		Cache::config(['default' => ['adapter' => 'Memory']]);
+
+		$result = Cache::key('default', 'post', 2);
+		$expected = 'post:1ad5be0d';
+		$this->assertIdentical($expected, $result);
+
+		$result = Cache::key('default', 'post', [2, 'json']);
+		$expected = 'post:723f0e19';
+		$this->assertIdentical($expected, $result);
+
+		$result = Cache::key('default', ['posts', 'banners'], 'json');
+		$expected = [
+			'posts:6b072545',
+			'banners:6b072545'
+		];
+		$this->assertIdentical($expected, $result);
+
+		$result = Cache::key('default', ['posts' => 'foo', 'banners' => 'bar'], 'json');
+		$expected = [
+			'posts:6b072545' => 'foo',
+			'banners:6b072545' => 'bar'
+		];
+		$this->assertIdentical($expected, $result);
+	}
+
+	public function testKeyWithGeneratorLambda() {
+		Cache::config(['default' => ['adapter' => 'Memory']]);
+
 		$key = function() {
 			return 'lambda_key';
 		};
 
-		$result = Cache::key($key);
+		$result = Cache::key('default', $key);
 		$expected = 'lambda_key';
 		$this->assertIdentical($expected, $result);
 
@@ -83,29 +125,31 @@ class CacheTest extends \lithium\test\Unit {
 			return 'lambda key';
 		};
 
-		$result = Cache::key($key);
+		$result = Cache::key('default', $key);
 		$expected = 'lambda key';
 		$this->assertIdentical($expected, $result);
 
 		$key = function($data = []) {
 			$defaults = ['foo' => 'foo', 'bar' => 'bar'];
 			$data += $defaults;
-			return 'composed_key_with_' . $data['foo'] . '_' . $data['bar'];
+			return 'composed_key_with:' . $data['foo'] . ':' . $data['bar'];
 		};
 
-		$result = Cache::key($key, ['foo' => 'boo', 'bar' => 'far']);
-		$expected = 'composed_key_with_boo_far';
+		$result = Cache::key('default', $key, ['foo' => 'boo', 'bar' => 'far']);
+		$expected = 'composed_key_with:boo:far';
 		$this->assertIdentical($expected, $result);
 	}
 
-	public function testKeyWithClosure() {
+	public function testKeyWithGeneratorClosure() {
+		Cache::config(['default' => ['adapter' => 'Memory']]);
+
 		$value = 5;
 
 		$key = function() use ($value) {
 			return "closure key {$value}";
 		};
 
-		$result = Cache::key($key);
+		$result = Cache::key('default', $key);
 		$expected = 'closure key 5';
 		$this->assertIdentical($expected, $result);
 
@@ -116,20 +160,22 @@ class CacheTest extends \lithium\test\Unit {
 			return $reference;
 		};
 
-		$result = Cache::key($key);
+		$result = Cache::key('default', $key);
 		$expected = 'mutable key';
 		$this->assertIdentical($expected, $result);
 		$this->assertIdentical('mutable key', $reference);
 	}
 
-	public function testKeyWithClosureAndArguments() {
+	public function testKeyWithGeneratorClosureAndArguments() {
+		Cache::config(['default' => ['adapter' => 'Memory']]);
+
 		$value = 'closure argument';
 
 		$key = function($value) {
 			return $value;
 		};
 
-		$result = Cache::key($key($value));
+		$result = Cache::key('default', $key($value));
 		$expected = 'closure argument';
 		$this->assertIdentical($expected, $result);
 	}
@@ -146,8 +192,9 @@ class CacheTest extends \lithium\test\Unit {
 		$result = Cache::write('default', 'some_key', 'some_data', '+1 minute');
 		$this->assertTrue($result);
 
-		$result = Cache::write('non_existing', 'key_value', 'data', '+1 minute');
-		$this->assertFalse($result);
+		$this->assertException('lithium\core\ConfigException', function() {
+			Cache::write('non_existing', 'key_value', 'data', '+1 minute');
+		});
 	}
 
 	public function testCacheWriteMultipleItems() {
@@ -211,7 +258,9 @@ class CacheTest extends \lithium\test\Unit {
 		$result = Cache::read('default', 'some_key', compact('conditions'));
 		$this->assertNotEmpty($result);
 
-		$this->assertFalse(Cache::read('non_existing', 'key_value', compact('conditions')));
+		$this->assertException('lithium\core\ConfigException', function() use ($conditions) {
+			Cache::read('non_existing', 'key_value', compact('conditions'));
+		});
 	}
 
 	public function testCacheIncrementDecrementWithConditions() {
@@ -279,10 +328,9 @@ class CacheTest extends \lithium\test\Unit {
 		);
 		$this->assertTrue($result);
 
-		$result = Cache::write(
-			'non_existing', 'key_value', 'data', '+1 minute', compact('conditions')
-		);
-		$this->assertFalse($result);
+		$this->assertException('lithium\core\ConfigException', function() use ($conditions) {
+			Cache::write('non_existing', 'key_value', 'data', '+1 minute', compact('conditions'));
+		});
 	}
 
 	public function testCacheReadThroughWrite() {
@@ -352,8 +400,9 @@ class CacheTest extends \lithium\test\Unit {
 		$expected = $config;
 		$this->assertEqual($expected, $result);
 
-		$result = Cache::read('non_existing', 'key_value');
-		$this->assertFalse($result);
+		$this->assertException('lithium\core\ConfigException', function() {
+			Cache::read('non_existing', 'key_value');
+		});
 
 		$result = Cache::write('default', 'keyed', 'some data', '+1 minute');
 		$this->assertTrue($result);
@@ -441,8 +490,9 @@ class CacheTest extends \lithium\test\Unit {
 		$conditions = function() use (&$config) {
 			return (isset($config['default']));
 		};
-		$result = Cache::read('non_existing', 'key_value', compact('conditions'));
-		$this->assertFalse($result);
+		$this->assertException('lithium\core\ConfigException', function() use ($conditions) {
+			Cache::read('non_existing', 'key_value', compact('conditions'));
+		});
 
 		$result = Cache::read('default', 'key_value', compact('conditions'));
 		$this->assertEmpty($result);
@@ -466,8 +516,9 @@ class CacheTest extends \lithium\test\Unit {
 		$expected = $config;
 		$this->assertEqual($expected, $result);
 
-		$result = Cache::delete('non_existing', 'key_value');
-		$this->assertFalse($result);
+		$this->assertException('lithium\core\ConfigException', function() {
+			Cache::delete('non_existing', 'key_value');
+		});
 
 		$result = Cache::write('default', 'to delete', 'dead data', '+1 minute');
 		$this->assertTrue($result);
@@ -489,8 +540,9 @@ class CacheTest extends \lithium\test\Unit {
 		$conditions = function() use (&$config) {
 			return (isset($config['default']));
 		};
-		$result = Cache::delete('non_existing', 'key_value', compact('conditions'));
-		$this->assertFalse($result);
+		$this->assertException('lithium\core\ConfigException', function() use ($conditions) {
+			Cache::delete('non_existing', 'key_value', compact('conditions'));
+		});
 
 		$result = Cache::write('default', 'to delete', 'dead data', '+1 minute');
 		$this->assertTrue($result);
@@ -515,8 +567,9 @@ class CacheTest extends \lithium\test\Unit {
 		$expected = $config;
 		$this->assertEqual($expected, $result);
 
-		$result = Cache::clear('non_existing');
-		$this->assertFalse($result);
+		$this->assertException('lithium\core\ConfigException', function() {
+			Cache::clear('non_existing');
+		});
 
 		$result = Cache::write('default', 'to delete', 'dead data', '+1 minute');
 		$this->assertTrue($result);
@@ -537,12 +590,12 @@ class CacheTest extends \lithium\test\Unit {
 		$expected = $config;
 		$this->assertEqual($expected, $result);
 
-		$result = Cache::clean('non_existing');
-		$this->assertFalse($result);
+		$this->assertException('lithium\core\ConfigException', function() {
+			Cache::clean('non_existing');
+		});
 
 		$result = Cache::clean('default');
 		$this->assertFalse($result);
-
 	}
 
 	public function testReset() {
@@ -570,8 +623,9 @@ class CacheTest extends \lithium\test\Unit {
 		$expected = $config;
 		$this->assertEqual($expected, $result);
 
-		$result = Cache::increment('does_not_exist', 'inc');
-		$this->assertFalse($result);
+		$this->assertException('lithium\core\ConfigException', function() {
+			Cache::increment('does_not_exist', 'inc');
+		});
 
 		$result = Cache::write('default', 'increment', 5, '+1 minute');
 		$this->assertTrue($result);
@@ -592,8 +646,9 @@ class CacheTest extends \lithium\test\Unit {
 		$expected = $config;
 		$this->assertEqual($expected, $result);
 
-		$result = Cache::decrement('does_not_exist', 'dec');
-		$this->assertFalse($result);
+		$this->assertException('lithium\core\ConfigException', function() {
+			Cache::decrement('does_not_exist', 'dec');
+		});
 
 		$result = Cache::write('default', 'decrement', 5, '+1 minute');
 		$this->assertTrue($result);

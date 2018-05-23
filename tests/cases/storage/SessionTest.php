@@ -2,7 +2,7 @@
 /**
  * li₃: the most RAD framework for PHP (http://li3.me)
  *
- * Copyright 2016, Union of RAD. All rights reserved. This source
+ * Copyright 2009, Union of RAD. All rights reserved. This source
  * code is distributed under the terms of the BSD 3-Clause License.
  * The full license text can be found in the LICENSE.txt file.
  */
@@ -13,7 +13,6 @@ use lithium\aop\Filters;
 use lithium\storage\Session;
 use lithium\storage\session\adapter\Memory;
 use lithium\tests\mocks\storage\session\adapter\SessionStorageConditional;
-use lithium\tests\mocks\storage\session\strategy\MockEncrypt;
 
 class SessionTest extends \lithium\test\Unit {
 
@@ -262,69 +261,6 @@ class SessionTest extends \lithium\test\Unit {
 
 		$result = Session::read('test', ['name' => 'secondary', 'strategies' => false]);
 		$this->assertEqual('{"foo":"bar"}', $result);
-	}
-
-	public function testEncryptedStrategy() {
-		$this->skipIf(!MockEncrypt::enabled(), 'The Mcrypt extension is not installed or enabled.');
-		error_reporting(($this->_backup = error_reporting()) & ~E_DEPRECATED);
-
-		$key = 'foobar';
-		$adapter = new Memory();
-		Session::config(['primary' => [
-			'adapter' => $adapter, 'filters' => [], 'strategies' => [
-				'lithium\tests\mocks\storage\session\strategy\MockEncrypt' => [
-					'secret' => $key
-				]
-			]
-		]]);
-
-		$value = ['foo' => 'bar'];
-
-		Session::write('test', $value);
-		$this->assertEqual(['foo' => 'bar'], Session::read('test'));
-
-		$this->assertTrue(Session::check('test'));
-		$this->assertTrue(Session::check('test', ['strategies' => false]));
-
-		$encrypted = Session::read('test', ['strategies' => false]);
-
-		$this->assertNotEqual($value, $encrypted);
-		$this->assertInternalType('string', $encrypted);
-
-		$result = Session::read('test');
-		$this->assertEqual($value, $result);
-
-		$result = Session::clear(['strategies' => false]);
-		$this->assertNull(Session::read('test'));
-
-		$this->assertFalse(Session::check('test'));
-		$this->assertFalse(Session::check('test', ['strategies' => false]));
-
-		$savedData = ['test' => $value];
-
-		$encrypt = new MockEncrypt(['secret' => $key]);
-		$result = $encrypt->encrypt($savedData);
-		$this->assertEqual($encrypted, $result);
-		$result = $encrypt->decrypt($encrypted);
-		$this->assertEqual($savedData, $result);
-	}
-
-	public function testHmacStrategyOnNonExistKey() {
-		Session::config(['primary' => [
-			'adapter' => new Memory(),
-			'strategies' => [
-				'Hmac' => [
-					'secret' => 's3cr3t'
-				]
-			]
-		]]);
-
-		$this->assertEmpty(Session::read('test'));
-
-		Session::write('test', 'value');
-		$result = Session::read('test');
-		$expected = 'value';
-		$this->assertEqual($expected, $result);
 	}
 }
 

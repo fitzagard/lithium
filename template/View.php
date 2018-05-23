@@ -2,7 +2,7 @@
 /**
  * li₃: the most RAD framework for PHP (http://li3.me)
  *
- * Copyright 2016, Union of RAD. All rights reserved. This source
+ * Copyright 2009, Union of RAD. All rights reserved. This source
  * code is distributed under the terms of the BSD 3-Clause License.
  * The full license text can be found in the LICENSE.txt file.
  */
@@ -428,9 +428,6 @@ class View extends \lithium\core\Object {
 			}
 			$process = $this->_processes[$process];
 		}
-		if (is_string(key($process))) {
-			return $this->_convertSteps($process, $params, $defaults);
-		}
 		$result = [];
 
 		foreach ($process as $step) {
@@ -444,26 +441,6 @@ class View extends \lithium\core\Object {
 			$result[$step] = $this->_steps[$step] + $defaults;
 		}
 		return $result;
-	}
-
-	/**
-	 * Handles API backward compatibility by converting an array-based rendering instruction passed
-	 * to `render()` as a process, to a set of rendering steps, rewriting any associated rendering
-	 * parameters as necessary.
-	 *
-	 * @param array $command A deprecated rendering instruction, i.e.
-	 *              `array('template' => '/path/to/template')`.
-	 * @param array $params The array of associated rendering parameters, passed by reference.
-	 * @param array $defaults Default step rendering options to be merged with the passed rendering
-	 *              instruction information.
-	 * @return array Returns a converted set of rendering steps, to be executed in `render()`.
-	 */
-	protected function _convertSteps(array $command, array &$params, $defaults) {
-		if (count($command) === 1) {
-			$params['template'] = current($command);
-			return [['path' => key($command)] + $defaults];
-		}
-		return $command;
 	}
 }
 

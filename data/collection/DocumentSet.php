@@ -2,7 +2,7 @@
 /**
  * li₃: the most RAD framework for PHP (http://li3.me)
  *
- * Copyright 2016, Union of RAD. All rights reserved. This source
+ * Copyright 2010, Union of RAD. All rights reserved. This source
  * code is distributed under the terms of the BSD 3-Clause License.
  * The full license text can be found in the LICENSE.txt file.
  */
@@ -25,8 +25,8 @@ class DocumentSet extends \lithium\data\Collection {
 		parent::_init();
 		$this->_original = $this->_data;
 		$this->_handlers += [
-			'MongoId' => function($value) { return (string) $value; },
-			'MongoDate' => function($value) { return $value->sec; }
+			'MongoDB\BSON\ObjectId' => function($value) { return (string) $value; },
+			'MongoDB\BSON\UTCDateTime' => function($value) { return $value->toDateTime()->getTimestamp(); }
 		];
 	}
 

@@ -2,7 +2,7 @@
 /**
  * li₃: the most RAD framework for PHP (http://li3.me)
  *
- * Copyright 2016, Union of RAD. All rights reserved. This source
+ * Copyright 2009, Union of RAD. All rights reserved. This source
  * code is distributed under the terms of the BSD 3-Clause License.
  * The full license text can be found in the LICENSE.txt file.
  */
@@ -212,12 +212,9 @@ class Query extends \lithium\core\Object {
 		if ($this->_entity && !$this->_config['model']) {
 			$this->model($this->_entity->model());
 		}
-		if ($this->_config['with']) {
-			if (!$model = $this->model()) {
-				throw new ConfigException("The `'with'` option needs a valid binded model.");
-			}
-			$this->_config['with'] = Set::normalize($this->_config['with']);
-		}
+
+		$this->with($this->_config['with']);
+
 		if ($model = $this->model()) {
 			$this->alias($this->_config['alias'] ?: $model::meta('name'));
 		}
@@ -543,6 +540,24 @@ class Query extends \lithium\core\Object {
 		}
 	}
 
+
+	/**
+	 * Set and get method for the query's embed specification.
+	 *
+	 * @param array $with The dotted relation paths to embed
+	 * @return mixed
+	 */
+	public function with($with = []) {
+		if (!func_num_args()) {
+			return $this->_config['with'];
+		}
+		if ((!$model = $this->model()) && $with) {
+			throw new ConfigException("The `'with'` option needs a valid bound model.");
+		}
+		$this->_config['with'] = Set::normalize($with);
+		return $this;
+	}
+
 	/**
 	 * Convert the query's properties to the data sources' syntax and return it as an array.
 	 *
@@ -788,7 +803,7 @@ class Query extends \lithium\core\Object {
 	 */
 	public function childs($relpath = null, $query = null) {
 		if (!$model = $this->model()) {
-			throw new ConfigException("No binded model.");
+			throw new ConfigException('No bound model.');
 		}
 		if ($query) {
 			$this->_childs[$relpath] = $query;

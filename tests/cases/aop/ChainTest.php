@@ -2,7 +2,7 @@
 /**
  * li₃: the most RAD framework for PHP (http://li3.me)
  *
- * Copyright 2016, Union of RAD. All rights reserved. This source
+ * Copyright 2015, Union of RAD. All rights reserved. This source
  * code is distributed under the terms of the BSD 3-Clause License.
  * The full license text can be found in the LICENSE.txt file.
  */
@@ -164,125 +164,6 @@ class ChainTest extends \lithium\test\Unit {
 		$resultHash = spl_object_hash($result);
 
 		$this->assertEqual($originalHash, $resultHash);
-	}
-
-	/* Deprecated / BC */
-
-	public function testLegacyFiltersBasicSignature() {
-		error_reporting(($original = error_reporting()) & ~E_USER_DEPRECATED);
-
-		$subject = new Chain([
-			'class' => 'Foo',
-			'method' => 'bar',
-			'filters' => [
-				function($self, $params, $chain) {
-					$params['body'] = compact('self', 'params', 'chain');
-					return $chain->next($self, $params, $chain);
-				}
-			]
-		]);
-		$result = $subject->run(['foo' => 'bar'], function($params) {
-			return $params['body'];
-		});
-
-		$this->assertEqual('Foo', $result['self']);
-		$this->assertEqual(['foo' => 'bar'], $result['params']);
-		$this->assertInstanceOf('\lithium\aop\Chain', $result['chain']);
-
-		error_reporting($original);
-	}
-
-	public function testLegacyFiltersParamsModificationWithLegacyNext() {
-		error_reporting(($original = error_reporting()) & ~E_USER_DEPRECATED);
-
-		$subject = new Chain([
-			'class' => 'Foo',
-			'method' => 'bar',
-			'filters' => [
-				function($self, $params, $chain) {
-					$params['foo'] .= 'baz';
-					return $chain->next($self, $params, $chain);
-				}
-			]
-		]);
-		$result = $subject->run(['foo' => 'bar'], function($params) {
-			return $params;
-		});
-		$this->assertEqual('barbaz', $result['foo']);
-
-		error_reporting($original);
-	}
-
-	public function testAccessingMethodMethodInsideFilterWithStaticObject() {
-		error_reporting(($original = error_reporting()) & ~E_USER_DEPRECATED);
-
-		$subject = new Chain([
-			'class' => 'Foo',
-			'method' => 'bar',
-			'filters' => [
-				function($params, $chain) {
-					$params['result'] = $chain->method();
-					return $chain->next($params);
-				}
-			]
-		]);
-		$result = $subject->run(['result' => null], function($params) {
-			return $params['result'];
-		});
-		$this->assertEqual('bar', $result);
-
-		$subject = new Chain([
-			'class' => 'Foo',
-			'method' => 'bar',
-			'filters' => [
-				function($params, $chain) {
-					$params['result'] = $chain->method(true);
-					return $chain->next($params);
-				}
-			]
-		]);
-		$result = $subject->run(['result' => null], function($params) {
-			return $params['result'];
-		});
-		$this->assertEqual('Foo::bar', $result);
-
-		error_reporting($original);
-	}
-
-	public function testAccessingMethodMethodInsideFilterWithInstance() {
-		error_reporting(($original = error_reporting()) & ~E_USER_DEPRECATED);
-
-		$subject = new Chain([
-			'class' => new stdClass(),
-			'method' => 'bar',
-			'filters' => [
-				function($params, $chain) {
-					$params['result'] = $chain->method();
-					return $chain->next($params);
-				}
-			]
-		]);
-		$result = $subject->run(['result' => null], function($params) {
-			return $params['result'];
-		});
-		$this->assertEqual('bar', $result);
-
-		$subject = new Chain([
-			'class' => new stdClass(),
-			'method' => 'bar',
-			'filters' => [
-				function($params, $chain) {
-					$params['result'] = $chain->method(true);
-					return $chain->next($params);
-				}
-			]
-		]);
-		$result = $subject->run(['result' => null], function($params) {
-			return $params['result'];
-		});
-		$this->assertEqual('stdClass::bar', $result);
-
-		error_reporting($original);
 	}
 }
 

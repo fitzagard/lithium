@@ -2,7 +2,7 @@
 /**
  * li₃: the most RAD framework for PHP (http://li3.me)
  *
- * Copyright 2016, Union of RAD. All rights reserved. This source
+ * Copyright 2014, Union of RAD. All rights reserved. This source
  * code is distributed under the terms of the BSD 3-Clause License.
  * The full license text can be found in the LICENSE.txt file.
  */
@@ -32,6 +32,26 @@ class CacheTest extends \lithium\test\Integration {
 		$directory = new SplFileInfo("{$resources}/tmp/cache");
 
 		return ($directory->isDir() && $directory->isReadable() && $directory->isWritable());
+	}
+
+	public function testFileAdapterSanitzeKey() {
+		Cache::config(['default' => ['adapter' => 'File']]);
+
+		$result = Cache::key('default', 'posts for bjœrn');
+		$expected = 'posts_for_bj_rn_fdf03955';
+		$this->assertEqual($expected, $result);
+
+		$result = Cache::key('default', 'posts-for-bjoern');
+		$expected = 'posts-for-bjoern';
+		$this->assertEqual($expected, $result);
+
+		$result = Cache::key('default', 'posts for Helgi Þorbjörnsson');
+		$expected = 'posts_for_Helgi__orbj_rnsson_c7f8433a';
+		$this->assertEqual($expected, $result);
+
+		$result = Cache::key('default', ['posts for bjœrn']);
+		$expected = ['posts_for_bj_rn_fdf03955'];
+		$this->assertEqual($expected, $result);
 	}
 
 	public function testFileAdapterCacheConfig() {

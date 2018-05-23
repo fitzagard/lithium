@@ -2,7 +2,7 @@
 /**
  * li₃: the most RAD framework for PHP (http://li3.me)
  *
- * Copyright 2016, Union of RAD. All rights reserved. This source
+ * Copyright 2009, Union of RAD. All rights reserved. This source
  * code is distributed under the terms of the BSD 3-Clause License.
  * The full license text can be found in the LICENSE.txt file.
  */
@@ -714,11 +714,7 @@ class QueryTest extends \lithium\test\Unit {
 			'mode' => null,
 			'model' => 'lithium\tests\mocks\data\model\MockGallery',
 			'calculate' => 'MyCalculate',
-			'with' => [
-				'Image.ImageTag.Tag' => null,
-				'Image' => null,
-				'Image.ImageTag' => null
-			],
+			'with' => [],
 			'source' => '{mock_gallery}',
 			'offset' => null,
 			'page' => null,

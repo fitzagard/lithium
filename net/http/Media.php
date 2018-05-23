@@ -2,7 +2,7 @@
 /**
  * li₃: the most RAD framework for PHP (http://li3.me)
  *
- * Copyright 2016, Union of RAD. All rights reserved. This source
+ * Copyright 2009, Union of RAD. All rights reserved. This source
  * code is distributed under the terms of the BSD 3-Clause License.
  * The full license text can be found in the LICENSE.txt file.
  */
@@ -1006,7 +1006,7 @@ class Media extends \lithium\core\StaticObject {
 	 * Example:
 	 * ```
 	 * Media::attach('app', [
-	 *     'path' => '/var/www/website/app/webroot/extradir',
+	 *     'path' => '/var/www/website/webroot/extradir',
 	 *     'prefix' => 'extradir'
 	 * ]);
 	 * ```

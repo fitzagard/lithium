@@ -2,7 +2,7 @@
 /**
  * li₃: the most RAD framework for PHP (http://li3.me)
  *
- * Copyright 2016, Union of RAD. All rights reserved. This source
+ * Copyright 2010, Union of RAD. All rights reserved. This source
  * code is distributed under the terms of the BSD 3-Clause License.
  * The full license text can be found in the LICENSE.txt file.
  */
@@ -19,11 +19,11 @@ class Exporter extends \lithium\core\StaticObject {
 	];
 
 	protected static $_commands = [
-		'create'    => null,
-		'update'    => '$set',
+		'create' => null,
+		'update' => '$set',
 		'increment' => '$inc',
-		'remove'    => '$unset',
-		'rename'    => '$rename'
+		'remove' => '$unset',
+		'rename' => '$rename'
 	];
 
 	public static function get($type, $export, array $options = []) {
@@ -115,8 +115,8 @@ class Exporter extends \lithium\core\StaticObject {
 			$options = [
 				'indexed' => null,
 				'handlers' => [
-					'MongoDate' => function($value) { return $value; },
-					'MongoId' => function($value) { return $value; }
+					'MongoDB\BSON\UTCDateTime' => function($value) { return $value; },
+					'MongoDB\BSON\ObjectId' => function($value) { return $value; }
 				]
 			];
 

@@ -2,7 +2,7 @@
 /**
  * li₃: the most RAD framework for PHP (http://li3.me)
  *
- * Copyright 2016, Union of RAD. All rights reserved. This source
+ * Copyright 2009, Union of RAD. All rights reserved. This source
  * code is distributed under the terms of the BSD 3-Clause License.
  * The full license text can be found in the LICENSE.txt file.
  */
@@ -110,6 +110,7 @@ class Request extends \lithium\net\http\Request {
 		'ajax'    => ['HTTP_X_REQUESTED_WITH', 'XMLHttpRequest'],
 		'flash'   => ['HTTP_USER_AGENT', 'Shockwave Flash'],
 		'ssl'     => 'HTTPS',
+		'dnt'     => ['HTTP_DNT', '1'],
 		'get'     => ['REQUEST_METHOD', 'GET'],
 		'post'    => ['REQUEST_METHOD', 'POST'],
 		'patch'   => ['REQUEST_METHOD', 'PATCH'],

@@ -2,7 +2,7 @@
 /**
  * li₃: the most RAD framework for PHP (http://li3.me)
  *
- * Copyright 2016, Union of RAD. All rights reserved. This source
+ * Copyright 2013, Union of RAD. All rights reserved. This source
  * code is distributed under the terms of the BSD 3-Clause License.
  * The full license text can be found in the LICENSE.txt file.
  */
@@ -23,12 +23,14 @@ class GalleriesFixture extends \li3_fixtures\test\Fixture {
 
 	protected $_records = [
 		[
+			'id' => 1,
 			'name' => 'Foo Gallery',
 			'active' => true,
 			'created' => '2007-06-20 21:02:27',
 			'modified' => '2009-12-14 22:36:09'
 		],
 		[
+			'id' => 2,
 			'name' => 'Bar Gallery',
 			'active' => true,
 			'created' => '2008-08-22 16:12:42',

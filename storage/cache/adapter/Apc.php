@@ -2,24 +2,12 @@
 /**
  * li₃: the most RAD framework for PHP (http://li3.me)
  *
- * Copyright 2016, Union of RAD. All rights reserved. This source
+ * Copyright 2009, Union of RAD. All rights reserved. This source
  * code is distributed under the terms of the BSD 3-Clause License.
  * The full license text can be found in the LICENSE.txt file.
  */
 
 namespace lithium\storage\cache\adapter;
-
-if (!class_exists('\lithium\storage\cache\Adapter')) {
-	$message  = 'The file (`' . __FILE__ . '`) has probably been included directly within ';
-	$message .= 'the bootstrap process. Due to its dependencies it should be (auto-)loaded ';
-	$message .= 'i.e. through the `Libraries` class exclusively. Please update your app\'s ';
-	$message .= 'bootstrap directory to the most recent version or remove the line where ';
-	$message .= 'this file was originally included. ';
-	$message .= 'See https://git.io/voxgh for the most recent version.';
-	trigger_error($message, E_USER_DEPRECATED);
-
-	require_once LITHIUM_LIBRARY_PATH . '/lithium/storage/cache/Adapter.php';
-}
 
 use lithium\storage\Cache;
 

@@ -2,7 +2,7 @@
 /**
  * li₃: the most RAD framework for PHP (http://li3.me)
  *
- * Copyright 2016, Union of RAD. All rights reserved. This source
+ * Copyright 2009, Union of RAD. All rights reserved. This source
  * code is distributed under the terms of the BSD 3-Clause License.
  * The full license text can be found in the LICENSE.txt file.
  */
@@ -60,6 +60,48 @@ class FileTest extends \lithium\test\Unit {
 	public function testEnabled() {
 		$file = $this->File;
 		$this->assertTrue($file::enabled());
+	}
+
+	public function testSanitzeKeys() {
+		$result = $this->File->key(['posts for bjœrn']);
+		$expected = ['posts_for_bj_rn_fdf03955'];
+		$this->assertEqual($expected, $result);
+
+		$result = $this->File->key(['posts-for-bjoern']);
+		$expected = ['posts-for-bjoern'];
+		$this->assertEqual($expected, $result);
+
+		$result = $this->File->key(['posts for Helgi Þorbjörnsson']);
+		$expected = ['posts_for_Helgi__orbj_rnsson_c7f8433a'];
+		$this->assertEqual($expected, $result);
+
+		$result = $this->File->key(['libraries.cache']);
+		$expected = ['libraries_cache_38235880'];
+		$this->assertEqual($expected, $result);
+
+		$key = 'post_';
+		for ($i = 0; $i <= 127; $i++) {
+			$key .= chr($i);
+		}
+		$result = $this->File->key([$key]);
+		$expected  = 'post______________________________________________-__0123456789_______ABCDEF';
+		$expected .= 'GHIJKLMNOPQRSTUVWXYZ______abcdefghijklmnopqrstuvwxyz______38676d3e';
+		$expected = [$expected];
+		$this->assertEqual($expected, $result);
+
+		$key = str_repeat('0', 300);
+		$result = $this->File->key([$key]);
+		$expected = [str_repeat('0', 246) . '_9e1830ed'];
+		$this->assertEqual($expected, $result);
+		$this->assertTrue(strlen($result[0]) <= 255);
+
+		$adapter = new File(['scope' => 'foo']);
+
+		$key = str_repeat('0', 300);
+		$result = $adapter->key([$key]);
+		$expected = [str_repeat('0', 246 - strlen('_foo')) . '_9e1830ed'];
+		$this->assertEqual($expected, $result);
+		$this->assertTrue(strlen($result[0]) <= 255);
 	}
 
 	public function testWrite() {

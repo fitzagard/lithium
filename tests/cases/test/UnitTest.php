@@ -2,7 +2,7 @@
 /**
  * li₃: the most RAD framework for PHP (http://li3.me)
  *
- * Copyright 2016, Union of RAD. All rights reserved. This source
+ * Copyright 2009, Union of RAD. All rights reserved. This source
  * code is distributed under the terms of the BSD 3-Clause License.
  * The full license text can be found in the LICENSE.txt file.
  */
@@ -488,16 +488,6 @@ class UnitTest extends \lithium\test\Unit {
 		$this->assertEqual($expected, $results[0]['message']);
 	}
 
-	public function testExpectExceptionRegex() {
-		$test = $this->test;
-		$this->assertException('/deprecated/', function() use ($test) {
-			$test->expectException('/test handle exception/');
-		});
-		$this->test->handleException(new Exception('test handle exception'));
-
-		$this->assertEmpty($this->test->expected());
-	}
-
 	public function testGetTest() {
 		$expected = __CLASS__;
 		$result = static::get('lithium\test\Unit');
@@ -866,7 +856,7 @@ class UnitTest extends \lithium\test\Unit {
 
 	public function testClassHasStaticAttributeTrue() {
 		$class = '\lithium\core\StaticObject';
-		$this->assertTrue($this->test->assertClassHasStaticAttribute('_methodFilters', $class));
+		$this->assertTrue($this->test->assertClassHasStaticAttribute('_parents', $class));
 
 		$results = $this->test->results();
 		$result = array_pop($results);
@@ -885,8 +875,7 @@ class UnitTest extends \lithium\test\Unit {
 		$this->assertEqual([
 			'expected' => 'foobar',
 			'result' => [
-				new \ReflectionProperty('lithium\core\StaticObject', '_parents'),
-				new \ReflectionProperty('lithium\core\StaticObject', '_methodFilters')
+				new \ReflectionProperty('lithium\core\StaticObject', '_parents')
 			]
 		], $result['data']);
 	}
@@ -910,17 +899,16 @@ class UnitTest extends \lithium\test\Unit {
 
 	public function testClassNotHasStaticAttributeFalse() {
 		$class = '\lithium\core\StaticObject';
-		$this->assertFalse($this->test->assertClassNotHasStaticAttribute('_methodFilters', $class));
+		$this->assertFalse($this->test->assertClassNotHasStaticAttribute('_parents', $class));
 
 		$results = $this->test->results();
 		$result = array_pop($results);
 
 		$this->assertEqual('fail', $result['result']);
 		$this->assertEqual([
-			'expected' => '_methodFilters',
+			'expected' => '_parents',
 			'result' => [
-				new \ReflectionProperty('lithium\core\StaticObject', '_parents'),
-				new \ReflectionProperty('lithium\core\StaticObject', '_methodFilters')
+				new \ReflectionProperty('lithium\core\StaticObject', '_parents')
 			]
 		], $result['data']);
 	}

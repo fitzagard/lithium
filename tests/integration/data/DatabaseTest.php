@@ -2,7 +2,7 @@
 /**
  * li₃: the most RAD framework for PHP (http://li3.me)
  *
- * Copyright 2016, Union of RAD. All rights reserved. This source
+ * Copyright 2010, Union of RAD. All rights reserved. This source
  * code is distributed under the terms of the BSD 3-Clause License.
  * The full license text can be found in the LICENSE.txt file.
  */
@@ -163,6 +163,23 @@ class DatabaseTest extends \lithium\tests\integration\data\Base {
 		$this->assertEqual($expected, $images);
 	}
 
+	public function testManyToOneUsingNestedStrategy() {
+		$opts = ['conditions' => ['gallery_id' => 1], 'strategy' => 'nested'];
+		$query = new Query($opts + [
+			'type' => 'read',
+			'model' => 'lithium\tests\fixture\model\gallery\Images',
+			'source' => 'images',
+			'alias' => 'Images',
+			'with' => ['Galleries']
+		]);
+		$images = $this->_db->read($query)->data();
+		$expected = include $this->_export . '/testManyToOne.php';
+		$this->assertEqual($expected, $images);
+
+		$images = Images::find('all', $opts + ['with' => 'Galleries'])->data();
+		$this->assertEqual($expected, $images);
+	}
+
 	public function testOneToMany() {
 		$opts = ['conditions' => ['Galleries.id' => 1]];
 
@@ -175,9 +192,27 @@ class DatabaseTest extends \lithium\tests\integration\data\Base {
 		]);
 		$galleries = $this->_db->read($query)->data();
 		$expected = include $this->_export . '/testOneToMany.php';
-		$gallery = Galleries::find('first', $opts + ['with' => 'Images'])->data();
+		$this->assertEqual($expected, $galleries);
 
+		$gallery = Galleries::find('first', $opts + ['with' => 'Images'])->data();
 		$this->assertEqual(3, count($gallery['images']));
+		$this->assertEqual(reset($expected), $gallery);
+	}
+
+	public function testOneToManyUsingNestedStrategy() {
+		$opts = ['conditions' => ['Galleries.id' => 1], 'strategy' => 'nested'];
+		$query = new Query($opts + [
+			'type' => 'read',
+			'model' => 'lithium\tests\fixture\model\gallery\Galleries',
+			'source' => 'galleries',
+			'alias' => 'Galleries',
+			'with' => ['Images']
+		]);
+		$galleries = $this->_db->read($query)->data();
+		$expected = include $this->_export . '/testOneToMany.php';
+		$this->assertEqual($expected, $galleries);
+
+		$gallery = Galleries::find('first', $opts + ['with' => 'Images'])->data();
 		$this->assertEqual(reset($expected), $gallery);
 	}
 
@@ -322,9 +357,10 @@ class DatabaseTest extends \lithium\tests\integration\data\Base {
 		$connectionConfig1 = Connections::get($connection1, ['config' => true]);
 		$connectionConfig2 = Connections::get($connection2, ['config' => true]);
 
-		parent::connect($connection2);
 		$this->skipIf(!$connectionConfig2, "The `'{$connection2}' connection is not available`.");
 		$this->skipIf(!$this->with(['MySql', 'PostgreSql', 'Sqlite3']));
+
+		parent::connect($connection2);
 
 		$bothInMemory = $connectionConfig1['database'] == ':memory:';
 		$bothInMemory = $bothInMemory && $connectionConfig2['database'] == ':memory:';
@@ -365,9 +401,10 @@ class DatabaseTest extends \lithium\tests\integration\data\Base {
 		$connectionConfig1 = Connections::get($connection1, ['config' => true]);
 		$connectionConfig2 = Connections::get($connection2, ['config' => true]);
 
-		parent::connect($connection2);
 		$this->skipIf(!$connectionConfig2, "The `'{$connection2}' connection is not available`.");
 		$this->skipIf(!$this->with(['MySql', 'PostgreSql', 'Sqlite3']));
+
+		parent::connect($connection2);
 
 		$bothInMemory = $connectionConfig1['database'] == ':memory:';
 		$bothInMemory = $bothInMemory && $connectionConfig2['database'] == ':memory:';
@@ -488,7 +525,7 @@ class DatabaseTest extends \lithium\tests\integration\data\Base {
 	public function testUpdateWithMultiThread() {
 		$thread1 = Images::first(1);
 		$thread2 = Images::first(1);
-		
+
 		$thread1->image = 'tmp';
 		$thread2->title = 'tmp';
 
@@ -503,7 +540,7 @@ class DatabaseTest extends \lithium\tests\integration\data\Base {
 		$title = $image->title;
 		$image->title = $title;
 		$this->assertTrue($image->save());
-		
+
 		$image = Images::first(1);
 		$title = $image->title;
 		$image->save(['title' => 'test'], [

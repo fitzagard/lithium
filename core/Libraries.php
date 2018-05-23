@@ -2,7 +2,7 @@
 /**
  * li₃: the most RAD framework for PHP (http://li3.me)
  *
- * Copyright 2016, Union of RAD. All rights reserved. This source
+ * Copyright 2009, Union of RAD. All rights reserved. This source
  * code is distributed under the terms of the BSD 3-Clause License.
  * The full license text can be found in the LICENSE.txt file.
  */
@@ -960,21 +960,14 @@ class Libraries {
 		$suffix = ($options['suffix'] === null) ? $suffix : $options['suffix'];
 
 
-		$dFlags = GLOB_ONLYDIR;
-		$zFlags = 0;
-		if (strpos($path, '{') !== false) {
-			$message  = "Search path `{$path}` relies on brace globbing. ";
-			$message .= 'Support for brace globbing in search paths has been deprecated.';
-			trigger_error($message, E_USER_DEPRECATED);
-
-			$dFlags |= GLOB_BRACE;
-			$zFlags |= GLOB_BRACE;
-		}
-		$libs = (array) glob($path . $suffix, $options['namespaces'] ? $dFlags : $zFlags);
+		$libs = (array) glob($path . $suffix, $options['namespaces'] ? GLOB_ONLYDIR : 0);
 
 		if ($options['recursive']) {
 			list($current, $match) = explode('/*', $path, 2);
-			$queue = array_diff((array) glob($current . '/*', $dFlags), $libs);
+			$queue = array_diff(
+				(array) glob($current . '/*', GLOB_ONLYDIR),
+				$libs
+			);
 			$match = str_replace('##', '.+', preg_quote(str_replace('*', '##', $match), '/'));
 			$match = '/' . $match . preg_quote($suffix, '/') . '$/';
 
@@ -982,8 +975,14 @@ class Libraries {
 				if (!is_dir($dir = array_pop($queue))) {
 					continue;
 				}
-				$libs = array_merge($libs, (array) glob("{$dir}/*{$suffix}"));
-				$queue = array_merge($queue, array_diff((array) glob("{$dir}/*", $dFlags), $libs));
+				$libs = array_merge(
+					$libs,
+					(array) glob("{$dir}/*{$suffix}")
+				);
+				$queue = array_merge(
+					$queue,
+					array_diff((array) glob("{$dir}/*", GLOB_ONLYDIR), $libs)
+				);
 			}
 			$libs = preg_grep($match, $libs);
 		}
@@ -1063,45 +1062,6 @@ class Libraries {
 			$namespace = $parts ? join('\\', $parts) : "*";
 		}
 		return compact('library', 'namespace', 'type', 'class', 'name');
-	}
-
-	/* Deprecated / BC */
-
-	/**
-	 * Stores the closures that represent the method filters. They are indexed by method name.
-	 *
-	 * @deprecated Not used anymore.
-	 * @var array
-	 */
-	protected static $_methodFilters = [];
-
-	/**
-	 * Apply a closure to a method in `Libraries`.
-	 *
-	 * @deprecated Replaced by `\lithium\aop\Filters::apply()` and `::clear()`.
-	 * @see lithium\util\collection\Filters
-	 * @param string $method The name of the method to apply the closure to.
-	 * @param Closure $filter The closure that is used to filter the method.
-	 * @return void
-	 */
-	public static function applyFilter($method, $filter = null) {
-		$message  = '`' . __METHOD__ . '()` has been deprecated in favor of ';
-		$message .= '`\lithium\aop\Filters::apply()` and `::clear()`.';
-		trigger_error($message, E_USER_DEPRECATED);
-
-		$class = get_called_class();
-
-		if ($method === false) {
-			Filters::clear($class);
-			return;
-		}
-		foreach ((array) $method as $m) {
-			if ($filter === false) {
-				Filters::clear($class, $m);
-			} else {
-				Filters::apply($class, $m, $filter);
-			}
-		}
 	}
 }
 

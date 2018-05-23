@@ -2,7 +2,7 @@
 /**
  * li₃: the most RAD framework for PHP (http://li3.me)
  *
- * Copyright 2016, Union of RAD. All rights reserved. This source
+ * Copyright 2009, Union of RAD. All rights reserved. This source
  * code is distributed under the terms of the BSD 3-Clause License.
  * The full license text can be found in the LICENSE.txt file.
  */
@@ -48,6 +48,49 @@ class MemcacheTest extends \lithium\test\Integration {
 
 	public function testEnabled() {
 		$this->assertTrue(Memcache::enabled());
+	}
+
+	public function testSanitzeKeys() {
+		$result = $this->memcache->key(['posts for bjœrn']);
+		$expected = ['posts_for_bjœrn_fdf03955'];
+		$this->assertEqual($expected, $result);
+
+		$result = $this->memcache->key(['posts-for-bjoern']);
+		$expected = ['posts-for-bjoern'];
+		$this->assertEqual($expected, $result);
+
+		$result = $this->memcache->key(['posts for Helgi Þorbjörnsson']);
+		$expected = ['posts_for_Helgi_Þorbjörnsson_c7f8433a'];
+		$this->assertEqual($expected, $result);
+
+		$result = $this->memcache->key(['libraries.cache']);
+		$expected = ['libraries.cache'];
+		$this->assertEqual($expected, $result);
+
+		$key = 'post_';
+		for ($i = 0; $i <= 127; $i++) {
+			$key .= chr($i);
+		}
+		$result = $this->memcache->key([$key]);
+		$expected  = 'post__________________________________!"#$%&\'()*+,-./0123456789:;';
+		$expected .= '<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|';
+		$expected .= '}~__38676d3e';
+		$expected = [$expected];
+		$this->assertEqual($expected, $result);
+
+		$key = str_repeat('0', 300);
+		$result = $this->memcache->key([$key]);
+		$expected = [str_repeat('0', 241) . '_9e1830ed'];
+		$this->assertEqual($expected, $result);
+		$this->assertTrue(strlen($result[0]) <= 250);
+
+		$adapter = new Memcache(['scope' => 'foo']);
+
+		$key = str_repeat('0', 300);
+		$result = $adapter->key([$key]);
+		$expected = [str_repeat('0', 241 - strlen('_foo')) . '_9e1830ed'];
+		$this->assertEqual($expected, $result);
+		$this->assertTrue(strlen($result[0]) <= 250);
 	}
 
 	public function testSimpleWrite() {
@@ -548,7 +591,7 @@ class MemcacheTest extends \lithium\test\Integration {
 	}
 
 	public function testRespondsToParentCall() {
-		$this->assertTrue($this->memcache->respondsTo('applyFilter'));
+		$this->assertTrue($this->memcache->respondsTo('invokeMethod'));
 		$this->assertFalse($this->memcache->respondsTo('fooBarBaz'));
 	}
 }

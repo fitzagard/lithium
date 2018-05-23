@@ -2,7 +2,7 @@
 /**
  * li₃: the most RAD framework for PHP (http://li3.me)
  *
- * Copyright 2016, Union of RAD. All rights reserved. This source
+ * Copyright 2009, Union of RAD. All rights reserved. This source
  * code is distributed under the terms of the BSD 3-Clause License.
  * The full license text can be found in the LICENSE.txt file.
  */
@@ -313,8 +313,6 @@ class Adaptable extends \lithium\core\StaticObject {
 	 * accessed. This allows configuration data to be lazy-loaded from adapters or other data
 	 * sources.
 	 *
-	 * @deprecated Per adapter filters have been deprecated, future versions will not add the
-	 *             `'filters'` option to the initial configuration anymore.
 	 * @param string $name The name of the configuration which is being accessed. This is the key
 	 *               name containing the specific set of configuration passed into `config()`.
 	 * @param array $config Contains the configuration assigned to `$name`. If this configuration is
@@ -323,11 +321,7 @@ class Adaptable extends \lithium\core\StaticObject {
 	 * @return array Returns the final array of settings for the given named configuration.
 	 */
 	protected static function _initConfig($name, $config) {
-		if (!empty($config['filters'])) {
-			trigger_error('Per adapter filters have been deprecated.', E_USER_DEPRECATED);
-		}
-		$defaults = ['adapter' => null, 'filters' => []];
-		return (array) $config + $defaults;
+		return (array) $config + ['adapter' => null];
 	}
 }
 

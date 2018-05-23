@@ -2,7 +2,7 @@
 /**
  * li₃: the most RAD framework for PHP (http://li3.me)
  *
- * Copyright 2016, Union of RAD. All rights reserved. This source
+ * Copyright 2009, Union of RAD. All rights reserved. This source
  * code is distributed under the terms of the BSD 3-Clause License.
  * The full license text can be found in the LICENSE.txt file.
  */
@@ -78,15 +78,19 @@ class Cache extends \lithium\core\Object {
 	 * @return \Closure Function returning boolean `true` on successful write, `false` otherwise.
 	 */
 	public function write($priority, $message) {
-		$config = $this->_config + $this->_classes;
-
-		return function($params) use ($config) {
+		return function($params) {
+			$cache = $this->_classes['cache'];
 			$params += ['timestamp' => strtotime('now')];
-			$key = $config['key'];
-			$key = is_callable($key) ? $key($params) : Text::insert($key, $params);
 
-			$cache = $config['cache'];
-			return $cache::write($config['config'], $key, $params['message'], $config['expiry']);
+			if (!is_callable($key = $this->_config['key'])) {
+				$key = function($data) use ($key) { return Text::insert($key, $data); };
+			}
+			return $cache::write(
+				$this->_config['config'],
+				$cache::key($this->_config['config'], $key, $params),
+				$params['message'],
+				$this->_config['expiry']
+			);
 		};
 	}
 }

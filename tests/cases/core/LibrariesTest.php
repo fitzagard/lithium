@@ -2,7 +2,7 @@
 /**
  * li₃: the most RAD framework for PHP (http://li3.me)
  *
- * Copyright 2016, Union of RAD. All rights reserved. This source
+ * Copyright 2009, Union of RAD. All rights reserved. This source
  * code is distributed under the terms of the BSD 3-Clause License.
  * The full license text can be found in the LICENSE.txt file.
  */
@@ -787,30 +787,6 @@ EOD;
 		$this->assertException("/has been removed/i", function() {
 			MockInitMethod::li3();
 		});
-	}
-
-	/**
-	 * @deprecated
-	 */
-	public function testPathTemplateWithGlobBrace() {
-		error_reporting(($original = error_reporting()) & ~E_USER_DEPRECATED);
-
-		Libraries::paths([
-			'analysis' => [
-				'{:library}\analysis\*{Docblock,Debugger}',
-			],
-		]);
-
-		$analysis = list($docblock, $debugger) = Libraries::locate('analysis', null, [
-			'recursive' => false,
-			'format' => false,
-		]);
-
-		$this->assertCount(2, $analysis);
-		$this->assertPattern('/Docblock\.php/', $docblock);
-		$this->assertPattern('/Debugger\.php/', $debugger);
-
-		error_reporting($original);
 	}
 }
 

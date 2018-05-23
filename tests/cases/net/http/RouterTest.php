@@ -2,7 +2,7 @@
 /**
  * li₃: the most RAD framework for PHP (http://li3.me)
  *
- * Copyright 2016, Union of RAD. All rights reserved. This source
+ * Copyright 2009, Union of RAD. All rights reserved. This source
  * code is distributed under the terms of the BSD 3-Clause License.
  * The full license text can be found in the LICENSE.txt file.
  */
@@ -1963,6 +1963,29 @@ class RouterTest extends \lithium\test\Unit {
 		], $request);
 
 		$this->assertEqual('/2', $result);
+	}
+
+	public function testDisableScopeAutoLibraryFeature() {
+		$request = new Request(['url' => '/', 'base' => '']);
+
+		Router::attach('admin', [
+			'prefix' => 'admin',
+			'absolute' => false,
+			'library' => false
+		]);
+		Router::scope('admin', function() {
+			Router::connect('/foo/posts/{:id}', [
+				'controller' => 'Posts', 'action' => 'index',
+				'library' => 'admin_foo'
+			]);
+		});
+		$result = Router::match([
+			'controller' => 'Posts', 'action' => 'index',
+			'id' => 23,
+			'library' => 'admin_foo'
+		], $request, ['scope' => 'admin']);
+
+		$this->assertEqual('/admin/foo/posts/23', $result);
 	}
 }
 

@@ -2,7 +2,7 @@
 /**
  * li₃: the most RAD framework for PHP (http://li3.me)
  *
- * Copyright 2016, Union of RAD. All rights reserved. This source
+ * Copyright 2010, Union of RAD. All rights reserved. This source
  * code is distributed under the terms of the BSD 3-Clause License.
  * The full license text can be found in the LICENSE.txt file.
  */
@@ -12,7 +12,6 @@ namespace lithium\tests\cases\analysis;
 use lithium\analysis\Inspector;
 use lithium\core\Libraries;
 use lithium\tests\mocks\analysis\MockEmptyClass;
-use lithium\tests\mocks\core\MockMethodFiltering;
 use lithium\action\Controller;
 
 class InspectorTest extends \lithium\test\Unit {
@@ -106,8 +105,8 @@ class InspectorTest extends \lithium\test\Unit {
 		$expected = [__LINE__ - 5 => "\tpublic function testLineIntrospection() {"];
 		$this->assertEqual($expected, $result);
 
-		$result = Inspector::lines(__CLASS__, [18]);
-		$expected = [18 => 'class InspectorTest extends \lithium\test\Unit {'];
+		$result = Inspector::lines(__CLASS__, [17]);
+		$expected = [17 => 'class InspectorTest extends \lithium\test\Unit {'];
 		$this->assertEqual($expected, $result);
 
 		$lines = 'This is the first line.' . PHP_EOL . 'And this the second.';
@@ -320,10 +319,8 @@ class InspectorTest extends \lithium\test\Unit {
 	}
 
 	public function testCallableObjectWithRealMethods() {
-		$obj = new MockMethodFiltering();
-		$this->assertTrue(Inspector::isCallable($obj, 'method', 0));
-		$this->assertTrue(Inspector::isCallable($obj, 'method2', 0));
-		$this->assertTrue(Inspector::isCallable($obj, 'manual', 0));
+		$obj = new Controller(['init' => false]);
+		$this->assertTrue(Inspector::isCallable($obj, 'render', 0));
 	}
 
 	public function testCallableClassWithRealMethods() {
@@ -333,9 +330,9 @@ class InspectorTest extends \lithium\test\Unit {
 	}
 
 	public function testCallableVisibility() {
-		$obj = new MockMethodFiltering();
-		$this->assertTrue(Inspector::isCallable($obj, 'method', 0));
-		$this->assertTrue(Inspector::isCallable($obj, 'method', 1));
+		$obj = new Controller(['init' => false]);
+		$this->assertTrue(Inspector::isCallable($obj, 'render', 0));
+		$this->assertTrue(Inspector::isCallable($obj, 'render', 1));
 		$this->assertFalse(Inspector::isCallable('lithium\action\Dispatcher', '_callable', 0));
 		$this->assertTrue(Inspector::isCallable('lithium\action\Dispatcher', '_callable', 1));
 	}

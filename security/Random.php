@@ -2,7 +2,7 @@
 /**
  * li₃: the most RAD framework for PHP (http://li3.me)
  *
- * Copyright 2016, Union of RAD. All rights reserved. This source
+ * Copyright 2015, Union of RAD. All rights reserved. This source
  * code is distributed under the terms of the BSD 3-Clause License.
  * The full license text can be found in the LICENSE.txt file.
  */
@@ -76,16 +76,14 @@ class Random {
 	 * The source of randomness used are as follows:
 	 *
 	 * 1. `random_bytes()`, available in PHP >=7.0
-	 * 2. `mcrypt_create_iv()`, available if the mcrypt extensions is installed
-	 * 3. `/dev/urandom`, available on *nix
-	 * 4. `GetRandom()` through COM, available on Windows
+	 * 2. `random_bytes()`, available if the openssl extension is installed
+	 * 3. `mcrypt_create_iv()`, available if the mcrypt extensions is installed
+	 * 4. `/dev/urandom`, available on *nix
+	 * 5. `GetRandom()` through COM, available on Windows
 	 *
 	 * Note: Users restricting path access through the `open_basedir` INI setting,
 	 * will need to include `/dev/urandom` into the list of allowed paths, as this
 	 * method might read from it.
-	 *
-	 * The `openssl_random_pseudo_bytes()` function is not used, as it is not clear
-	 * under which circumstances it will not have a strong source available to it.
 	 *
 	 * @link http://php.net/random_bytes
 	 * @link http://php.net/mcrypt_create_iv
@@ -98,6 +96,11 @@ class Random {
 		if (function_exists('random_bytes')) {
 			return function($bytes) {
 				return random_bytes($bytes);
+			};
+		}
+		if (function_exists('openssl_random_pseudo_bytes')) {
+			return function($bytes) {
+				return openssl_random_pseudo_bytes($bytes);
 			};
 		}
 		if (function_exists('mcrypt_create_iv')) {

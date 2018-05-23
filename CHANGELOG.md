@@ -1,5 +1,132 @@
 # Change Log
 
+## v2.0.0
+
+### Changed
+
+- The `Mongo` data source adapter has been updated to work with the `mongodb` extension
+  instead of the old `mongo` extension. This brings back full li₃ support for MongoDB 
+  on PHP 7.x. Due to how the new extension works, we do not support GridFS through the 
+  adapter anymore. You can still access GridFS using the underlying connection object. 
+  (Simon Jaillet, Dirk Brünsicke)
+
+- Removed deprecated functionality: magic download header in action response, unit testing's
+  expectException method. (David Persson) 
+
+- ConfigExceptions (thrown when accessing non existent configurations) are now allowed to 
+  bubble up in `Cache`.
+
+- The following previously deprecated things have been removed:
+	- The `XCache` `Cache` adapter
+	- Glob brace support in `Libraries`
+	- Per adapter filters
+	- The `String` class
+	- Long options like `--foo-bar` are now only made available as `fooBar` and
+	  not `foo-bar` after parsing in the console router.
+	- The test `Mocker` class
+	- Support for `mcrypt` in the sesion `Encrypt` strategy
+	- Support for old-style rendering instructions i.e. `['template' => '/path/to/template']`
+	- The `FirePhp` logging adapter
+	- Support for old-style AOP filters
+
+## v1.2.0
+
+### Added
+
+- PHP 7.1 support
+
+- Data sources now support the `nested` strategy which will embed related records/documents by
+  fetching them using additional queries. (jails) 
+	
+  This strategy is auto-enabled on NoSQL-style databases where documents now
+  do not have to be fetched manually anymore. For classic relational databases
+  the new strategy can be enabled on a per query basis, if preferred over the
+  default `joined` strategy:
+
+  ```
+  Galleries::find('all', ['with' => 'Images', 'strategy' => 'nested'])
+  ```
+
+  Please note that records/documents - fetched using this strategy - cannot be
+  further constrained by conditions.
+
+- `Cache::key()` learned to generate safe cache keys. Where each adapter defines
+  what "safe" means. The method was all in all made more flexible and feature rich
+  as it added support for reusable and key mutating generator functions as well as
+  support for key generation by passing any form of data.
+
+- `action\Request` is now (via `$this->request->is('dnt')`) able to detect if the 
+  _Do Not Track_ feature is enabled.
+
+- The auto-library feature for scoped routes can now be disabled, so it's possible to
+  i.e. have an app and an admin scope, where the admin scope itself contains several 
+  admin libraries.
+
+- `openssl_random_pseudo_bytes()` has been added as a new RNG source.
+
+- Added `core\MergeInheritable` trait which allows classes to merge their array
+  properties with such properties defined in class parents. Used mainly for
+  merging `action\Controller::$_render` and `data\Model` properties. Also 
+  slightly optimizes memory usage in said classes.
+
+- The `Response` now knows about HTTP status code 426 (Upgrade Required).
+
+- The `Encrypt` session strategy now uses the `openssl` extension for symmetric 
+  encryption for better support and performance, whenever possible. Previously the,
+  now deprecated, `mcrypt` extension was always used. When `openssl` cannot be 
+  used as a drop in, the strategy will fall back to `mcrypt` usage (aka _legacy_ 
+  mode). This is the case when a non-default cipher mode (anything else than AES 256 
+  CBC) has been chosen or the `openssl` extension is not available.
+
+- The credit card validator now supports MasterCard 2-series. (Grayson Scherer)
+
+### Changed
+
+- The undocumented feature in `Cache::{write,read,delete,increment,decrement}()`, where 
+  these methods supported callables as keys has been removed. Keys can now be of scalar 
+  type only.
+
+- `Cache::key()` now requires a cache configuration name as it's first argument.
+
+- Dropped support for PHP 5.5
+
+- The `Encrypt` strategy now depends on the `openssl` extension, when it does not
+  operate in _legacy_ mode (see above). In this case it also doesn't depend on the 
+  `mcrypt` extension anymore.
+
+### Deprecated
+
+- Short rendering instructions have now been officially deprecated and trigger a
+  deprecation message. Usage of short syntax was already discouraged.
+  
+  ```
+  ['template' => '/path/to/template'] // short deprecated syntax
+  ['template' => ['path' => '/path/to/template']] // full valid syntax
+  ```
+
+- `Object` and `StaticObject` are being step by step deprecated, as
+  `Object` is soft-reserved in PHP >=7. Chance is taken for a cleanup of the
+  class-hirarchy and unused/obsolete methods.
+
+  | old | new |
+  | --- | --- |
+  | `*Object::_parents()` | replaced, use `lithium\core\MergeInheritable::_inherit()` |
+  | `*Object::_stop()` | _no replacement_, must reimplement |
+  | `Object::__set_state()` | _no replacement_ |
+
+- Changing the default cipher and/or mode for the `Encrypt` strategy has been 
+  deprecated and will cause the strategy to switch into _legacy_ mode. In legacy
+  mode the deprecated `mcrypt` extension will still be used.
+
+### Fixed
+
+- The `'key'` and `'class'` options were supposed to be provided only for
+  Session strategies. They however leaked into Session adapters options.
+
+- A potential invalid reuse of a previously initialized `mcrypt` resource
+  has been fixed when using multiple `Encrypt` strategies with different
+  ciphers and/or modes. 
+
 ## v1.1.1
 
 ### Added

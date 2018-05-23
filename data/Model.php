@@ -2,7 +2,7 @@
 /**
  * li₃: the most RAD framework for PHP (http://li3.me)
  *
- * Copyright 2016, Union of RAD. All rights reserved. This source
+ * Copyright 2009, Union of RAD. All rights reserved. This source
  * code is distributed under the terms of the BSD 3-Clause License.
  * The full license text can be found in the LICENSE.txt file.
  */
@@ -76,6 +76,8 @@ use BadMethodCallException;
  * @see lithium\data\Connections
  */
 class Model extends \lithium\core\StaticObject {
+
+	use \lithium\core\MergeInheritable;
 
 	/**
 	 * Criteria for data validation.
@@ -305,7 +307,7 @@ class Model extends \lithium\core\StaticObject {
 	/**
 	 * Holds an array of attributes to be inherited.
 	 *
-	 * @see lithium\data\Model::_inherited()
+	 * @see lithium\data\Model::_initialize()
 	 * @var array
 	 */
 	protected $_inherits = [];
@@ -360,7 +362,24 @@ class Model extends \lithium\core\StaticObject {
 		}
 		static::$_initialized[$class] = true;
 
-		$self->_inherit();
+		$properties = [
+			'validates',
+			'belongsTo',
+			'hasMany',
+			'hasOne',
+			'_meta',
+			'_finders',
+			'_query',
+			'_classes',
+			'_initializers'
+		];
+		if (is_array($self->_schema)) {
+			$properties[] = '_schema';
+		}
+		if ($self->_inherits) {
+			$properties = array_merge($self->_inherits, $properties);
+		}
+		$self->_inherit($properties);
 
 		$source = [
 			'classes' => [], 'meta' => [], 'finders' => [], 'schema' => []
@@ -406,57 +425,6 @@ class Model extends \lithium\core\StaticObject {
 
 		static::_relationsToLoad();
 		return $self;
-	}
-
-	/**
-	 * Merge parent class attributes to the current instance.
-	 */
-	protected function _inherit() {
-
-		$inherited = array_fill_keys($this->_inherited(), []);
-
-		foreach (static::_parents() as $parent) {
-			$parentConfig = get_class_vars($parent);
-
-			foreach ($inherited as $key => $value) {
-				if (isset($parentConfig["{$key}"])) {
-					$val = $parentConfig["{$key}"];
-					if (is_array($val)) {
-						$inherited[$key] += $val;
-					}
-				}
-			}
-
-			if ($parent === __CLASS__) {
-				break;
-			}
-		}
-
-		foreach ($inherited as $key => $value) {
-			if (is_array($this->{$key})) {
-				$this->{$key} += $value;
-			}
-		}
-	}
-
-	/**
-	 * Return inherited attributes.
-	 *
-	 * @param array
-	 */
-	protected function _inherited() {
-		return array_merge($this->_inherits, [
-			'validates',
-			'belongsTo',
-			'hasMany',
-			'hasOne',
-			'_meta',
-			'_finders',
-			'_query',
-			'_schema',
-			'_classes',
-			'_initializers'
-		]);
 	}
 
 	/**
@@ -594,7 +562,7 @@ class Model extends \lithium\core\StaticObject {
 	 * Posts::find(23);
 	 *
 	 * // Also works with objects.
-	 * Posts::find(new MongoId(23));
+	 * Posts::find(new ObjectId(23));
 	 * ```
 	 *
 	 * @see lithium\data\Model::finder()
@@ -660,20 +628,6 @@ class Model extends \lithium\core\StaticObject {
 		};
 		if (isset($self->_finders[$type])) {
 			$finder = $self->_finders[$type];
-
-			$reflect = new \ReflectionFunction($finder);
-			if ($reflect->getNumberOfParameters() > 2) {
-				$message  = 'Old style finder function in file ' . $reflect->getFileName() . ' ';
-				$message .= 'on line ' . $reflect->getStartLine() . '. ';
-				$message .= 'The signature for finder functions has changed. It is now ';
-				$message .= '`($params, $next)` instead of the old `($self, $params, $chain)`. ';
-				$message .= 'Instead of `$self` use `$this` or `static`.';
-				trigger_error($message, E_USER_DEPRECATED);
-
-				return Filters::bcRun(
-					get_called_class(), __FUNCTION__, $params, $implementation, [$finder]
-				);
-			}
 
 			$implementation = function($params) use ($finder, $implementation) {
 				return $finder($params, $implementation);
@@ -1518,6 +1472,34 @@ class Model extends \lithium\core\StaticObject {
 			$this->{$type}[$name]['fieldName'] = $fieldName;
 		}
 		return $this->{$type}[$name]['fieldName'];
+	}
+
+	/**
+	 * Eager loads relations.
+	 *
+	 * @param mixed $collection The collection to extend.
+	 * @param array $relations The relations to eager load.
+	 * @return mixed The collection.
+	 */
+	public static function embed(&$collection, $relations) {
+		$tree = Set::expand(array_fill_keys(array_keys(Set::normalize($relations)), []));
+
+		foreach ($tree as $name => $subtree) {
+			$rel = static::relations($name);
+			$to = $rel->to();
+			$related = $rel->embed($collection, isset($relations[$name]) ? $relations[$name] : []);
+
+			$subrelations = [];
+			foreach ($relations as $path => $value) {
+				if (preg_match('~^'.$name.'\.(.*)$~', $path, $matches)) {
+					$subrelations[] = $matches[1];
+				}
+			}
+			if ($subrelations) {
+				$to::embed($related, $subrelations);
+			}
+		}
+		return $collection;
 	}
 
 	/**

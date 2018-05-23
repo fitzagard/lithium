@@ -2,7 +2,7 @@
 /**
  * li₃: the most RAD framework for PHP (http://li3.me)
  *
- * Copyright 2016, Union of RAD. All rights reserved. This source
+ * Copyright 2009, Union of RAD. All rights reserved. This source
  * code is distributed under the terms of the BSD 3-Clause License.
  * The full license text can be found in the LICENSE.txt file.
  */
@@ -292,10 +292,9 @@ abstract class Database extends \lithium\data\Source {
 						}
 					}
 				}
+				$context->with([]);
 			},
-			'nested' => function($model, $context) {
-				throw new QueryException("This strategy is not yet implemented.");
-			}
+			'nested' => function($model, $context) {}
 		];
 	}
 
@@ -336,7 +335,7 @@ abstract class Database extends \lithium\data\Source {
 					throw new ConfigException($msg, null, $e);
 				break;
 			}
-			throw new ConfigException('An unknown configuration error has occured.', null, $e);
+			throw new ConfigException($e->getMessage(), null, $e);
 		}
 		$this->_isConnected = true;
 
@@ -602,32 +601,37 @@ abstract class Database extends \lithium\data\Source {
 				return $result;
 			}
 			if ($return === 'item') {
-				return $model::create([], compact('query', 'result') + [
+				$collection = $model::create([], compact('query', 'result') + [
 					'class' => 'set', 'defaults' => false
 				]);
-			}
-			$columns = $args['schema'] ?: $this->schema($query, $result);
+			} else {
+				$columns = $args['schema'] ?: $this->schema($query, $result);
 
-			if (!is_array(reset($columns))) {
-				$columns = ['' => $columns];
-			}
-
-			$i = 0;
-			$records = [];
-
-			foreach ($result as $data) {
-				$offset = 0;
-				$records[$i] = [];
-
-				foreach ($columns as $path => $cols) {
-					$len = count($cols);
-					$values = array_combine($cols, array_slice($data, $offset, $len));
-					($path) ? $records[$i][$path] = $values : $records[$i] += $values;
-					$offset += $len;
+				if (!is_array(reset($columns))) {
+					$columns = ['' => $columns];
 				}
-				$i++;
+
+				$i = 0;
+				$records = [];
+
+				foreach ($result as $data) {
+					$offset = 0;
+					$records[$i] = [];
+
+					foreach ($columns as $path => $cols) {
+						$len = count($cols);
+						$values = array_combine($cols, array_slice($data, $offset, $len));
+						($path) ? $records[$i][$path] = $values : $records[$i] += $values;
+						$offset += $len;
+					}
+					$i++;
+				}
+				$collection = Set::expand($records);
 			}
-			return Set::expand($records);
+			if (is_object($query) && $query->with()) {
+				$model::embed($collection, $query->with(), ['return' => $return]);
+			}
+			return $collection;
 		});
 	}
 

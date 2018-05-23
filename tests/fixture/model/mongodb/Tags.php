@@ -7,16 +7,17 @@
  * The full license text can be found in the LICENSE.txt file.
  */
 
-namespace lithium\tests\mocks\core;
+namespace lithium\tests\fixture\model\mongodb;
 
-/**
- * @deprecated
- */
-class MockStaticFilteringExtended extends \lithium\tests\mocks\core\MockStaticMethodFiltering {
+class Tags extends \lithium\data\Model {
 
-	public static function childMethod() {
-		return 'Working';
-	}
+	public $hasMany = ['ImagesTags'];
+
+	protected $_schema = [
+		'_id' => ['type' => 'id'],
+		'name' => ['type' => 'string', 'length' => 50],
+		'author' => ['type' => 'id']
+	];
 }
 
 ?>
